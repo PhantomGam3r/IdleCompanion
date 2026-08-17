@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber, numberToLetter } from './helpers';
+import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber, formatCount, numberToLetter } from './helpers';
 
 describe('asIndexedNumbers', () => {
   it('reads JSON arrays', () => {
@@ -44,5 +44,13 @@ describe('numberToLetter', () => {
     expect(numberToLetter(0)).toBe('a');
     expect(numberToLetter(22)).toBe('w');
     expect(numberToLetter(38)).toBe('M');
+  });
+});
+
+describe('formatCount', () => {
+  it('rounds float artifacts and adds thousands separators', () => {
+    expect(formatCount(17804.600000000006)).toBe('17,805');
+    expect(formatCount(80)).toBe('80');
+    expect(formatCount(Number.NaN)).toBe('0');
   });
 });
