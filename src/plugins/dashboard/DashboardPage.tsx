@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useAccount } from '../../ui/AccountProvider';
 import { formatCount } from '../../core/parse/helpers';
 import { SKILL_NAMES } from '../../core/parse/parseSave';
+import { GameIcon } from '../../ui/icons/GameIcon';
+import { skillIconPath } from '../../ui/icons/gameIcons';
 import { runReview } from '../review/engine';
 
 function formatAgo(ms: number | null): string {
@@ -14,6 +16,26 @@ function formatAgo(ms: number | null): string {
   const minutes = Math.floor((delta % 3_600_000) / 60_000);
   if (hours > 0) return `${hours}h ${minutes}m ago`;
   return `${Math.max(1, minutes)}m ago`;
+}
+
+type StatCardProps = {
+  icon: string;
+  label: string;
+  value: string | number;
+  detail?: string;
+};
+
+function StatCard({ icon, label, value, detail }: StatCardProps) {
+  return (
+    <article className="stat-card">
+      <div className="stat-card-head">
+        <GameIcon path={icon} alt="" size={28} />
+        <span className="stat-label">{label}</span>
+      </div>
+      <strong>{value}</strong>
+      {detail ? <span className="muted">{detail}</span> : null}
+    </article>
+  );
 }
 
 export function DashboardPage() {
@@ -66,13 +88,19 @@ export function DashboardPage() {
 
       {alerts.length > 0 ? (
         <section className="panel">
-          <h2>Alerts</h2>
+          <h2 className="panel-title-with-icon">
+            <GameIcon path="etc/TasksStar" alt="" size={24} />
+            Alerts
+          </h2>
           <ul className="advice-list">
             {alerts.slice(0, 5).map((item) => (
               <li key={item.title} className="advice-item warning">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
+                <div className="advice-item-main">
+                  {item.icon ? <GameIcon path={item.icon} alt="" size={28} /> : null}
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.detail}</p>
+                  </div>
                 </div>
               </li>
             ))}
@@ -81,128 +109,147 @@ export function DashboardPage() {
       ) : null}
 
       <section className="stat-grid">
-        <article className="stat-card">
-          <span className="stat-label">Characters</span>
-          <strong>{account.characters.length}</strong>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Highest combat</span>
-          <strong>{highest?.combatLevel ?? 0}</strong>
-          <span className="muted">{highest?.name}</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Stamp levels</span>
-          <strong>{account.stampLevels}</strong>
-          <span className="muted">{account.stampsCollected} collected</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Bubbles / vials</span>
-          <strong>{account.bubbleLevels}</strong>
-          <span className="muted">{account.vialsUnlocked} vials</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Bribes</span>
-          <strong>{account.bribesPurchased}</strong>
-          <span className="muted">{account.bribes.filter((b) => b.status === 0).length} available</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Statues</span>
-          <strong>{account.statueLevels}</strong>
-          <span className="muted">{account.statues.filter((s) => s.level > 0).length} deposited</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Cards</span>
-          <strong>{account.cardsFound}</strong>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Post Office</span>
-          <strong>{formatCount(account.postOfficeBoxesEarned)}</strong>
-          <span className="muted">boxes earned</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Death Note</span>
-          <strong>{account.deathNote.mapsWithKills}</strong>
-          <span className="muted">{account.deathNote.lowestSkull}</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Buildings</span>
-          <strong>{account.buildingsUnlocked}</strong>
-          <span className="muted">{account.prayersUnlocked} prayers</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Meals</span>
-          <strong>{account.mealsUnlocked}</strong>
-          <span className="muted">{account.kitchensOwned} kitchens</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Rift</span>
-          <strong>{account.riftLevel}</strong>
-          <span className="muted">{account.breedingPets} pets</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Sailing</span>
-          <strong>{account.sailingArtifacts}</strong>
-          <span className="muted">{account.divinityGods} gods</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Slab / vault</span>
-          <strong>{account.slabItems}</strong>
-          <span className="muted">{account.vaultLevels} vault lv</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Islands</span>
-          <strong>{account.islandsUnlocked}</strong>
-          <span className="muted">{account.obolsOwned} obols</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Farming</span>
-          <strong>{account.farmCrops}</strong>
-          <span className="muted">{account.farmPlots} plots</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Sneaking / summon</span>
-          <strong>{account.sneakingJadeUpgrades}</strong>
-          <span className="muted">{account.summonWins} wins</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Caverns</span>
-          <strong>{account.cavernsUnlocked}</strong>
-          <span className="muted">{account.coralUnlocked} corals</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Cog board</span>
-          <strong>{account.cogsPlaced}</strong>
-          <span className="muted">{account.flagsComplete} flags</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Master classes</span>
-          <strong>{account.grimoireLevels}</strong>
-          <span className="muted">{account.compassLevels} compass</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Research</span>
-          <strong>{account.researchCells}</strong>
-          <span className="muted">{account.mineheadOpponents} minehead</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Companions</span>
-          <strong>{account.companionDataPresent ? account.companionsOwned : '—'}</strong>
-          <span className="muted">{account.tomeBluePages || account.tomeRedPages ? 'tome pages' : 'no extra tome pages'}</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Sushi / Button</span>
-          <strong>{account.sushiUnique}</strong>
-          <span className="muted">{account.buttonPresses} presses</span>
-        </article>
-        <article className="stat-card">
-          <span className="stat-label">Source</span>
-          <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
-          <span className="muted">{bundle?.source}</span>
-        </article>
+        <StatCard icon="etc/Character" label="Characters" value={account.characters.length} />
+        <StatCard
+          icon="data/ClassIcons41"
+          label="Highest combat"
+          value={highest?.combatLevel ?? 0}
+          detail={highest?.name}
+        />
+        <StatCard
+          icon="data/StampA34"
+          label="Stamp levels"
+          value={account.stampLevels}
+          detail={`${account.stampsCollected} collected`}
+        />
+        <StatCard
+          icon="data/aBrewOptionA0"
+          label="Bubbles / vials"
+          value={account.bubbleLevels}
+          detail={`${account.vialsUnlocked} vials`}
+        />
+        <StatCard
+          icon="data/BribeW"
+          label="Bribes"
+          value={account.bribesPurchased}
+          detail={`${account.bribes.filter((b) => b.status === 0).length} available`}
+        />
+        <StatCard
+          icon="data/EquipmentStatues29"
+          label="Statues"
+          value={account.statueLevels}
+          detail={`${account.statues.filter((s) => s.level > 0).length} deposited`}
+        />
+        <StatCard icon="data/2CardsA0" label="Cards" value={account.cardsFound} />
+        <StatCard
+          icon="data/DeliveryBox"
+          label="Post Office"
+          value={formatCount(account.postOfficeBoxesEarned)}
+          detail="boxes earned"
+        />
+        <StatCard
+          icon="data/ConTower2"
+          label="Death Note"
+          value={account.deathNote.mapsWithKills}
+          detail={account.deathNote.lowestSkull}
+        />
+        <StatCard
+          icon="data/ConTower7"
+          label="Buildings"
+          value={account.buildingsUnlocked}
+          detail={`${account.prayersUnlocked} prayers`}
+        />
+        <StatCard
+          icon="data/ClassIcons51"
+          label="Meals"
+          value={account.mealsUnlocked}
+          detail={`${account.kitchensOwned} kitchens`}
+        />
+        <StatCard
+          icon="data/Mface75"
+          label="Rift"
+          value={account.riftLevel}
+          detail={`${account.breedingPets} pets`}
+        />
+        <StatCard
+          icon="data/ClassIcons54"
+          label="Sailing"
+          value={account.sailingArtifacts}
+          detail={`${account.divinityGods} gods`}
+        />
+        <StatCard
+          icon="etc/Slab"
+          label="Slab / vault"
+          value={account.slabItems}
+          detail={`${account.vaultLevels} vault lv`}
+        />
+        <StatCard
+          icon="data/Island1"
+          label="Islands"
+          value={account.islandsUnlocked}
+          detail={`${account.obolsOwned} obols`}
+        />
+        <StatCard
+          icon="data/ClassIcons57"
+          label="Farming"
+          value={account.farmCrops}
+          detail={`${account.farmPlots} plots`}
+        />
+        <StatCard
+          icon="data/ClassIcons58"
+          label="Sneaking / summon"
+          value={account.sneakingJadeUpgrades}
+          detail={`${account.summonWins} wins`}
+        />
+        <StatCard
+          icon="data/Quest90"
+          label="Caverns"
+          value={account.cavernsUnlocked}
+          detail={`${account.coralUnlocked} corals`}
+        />
+        <StatCard
+          icon="data/ClassIcons49"
+          label="Cog board"
+          value={account.cogsPlaced}
+          detail={`${account.flagsComplete} flags`}
+        />
+        <StatCard
+          icon="data/GrimoireUpg18"
+          label="Master classes"
+          value={account.grimoireLevels}
+          detail={`${account.compassLevels} compass`}
+        />
+        <StatCard
+          icon="data/ClassIcons61"
+          label="Research"
+          value={account.researchCells}
+          detail={`${account.mineheadOpponents} minehead`}
+        />
+        <StatCard
+          icon="data/TournyRank2"
+          label="Companions"
+          value={account.companionDataPresent ? account.companionsOwned : '—'}
+          detail={account.tomeBluePages || account.tomeRedPages ? 'tome pages' : 'no extra tome pages'}
+        />
+        <StatCard
+          icon="data/Sushi6"
+          label="Sushi / Button"
+          value={account.sushiUnique}
+          detail={`${account.buttonPresses} presses`}
+        />
+        <StatCard
+          icon="data/GalleryBell"
+          label="Source"
+          value={account.source === 'cloud' ? 'Live cloud' : 'JSON import'}
+          detail={bundle?.source}
+        />
       </section>
 
       <section className="panel">
-        <h2>Characters</h2>
+        <h2 className="panel-title-with-icon">
+          <GameIcon path="etc/Character" alt="" size={24} />
+          Characters
+        </h2>
         <div className="table-wrap">
           <table>
             <thead>
@@ -214,7 +261,12 @@ export function DashboardPage() {
                 <th>AGI</th>
                 <th>WIS</th>
                 <th>LUK</th>
-                <th>PO</th>
+                <th>
+                  <span className="table-icon-label">
+                    <GameIcon path="data/DeliveryBox" alt="" size={18} />
+                    PO
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -236,13 +288,19 @@ export function DashboardPage() {
       </section>
 
       <section className="panel">
-        <h2>Family skill peaks</h2>
+        <h2 className="panel-title-with-icon">
+          <GameIcon path="data/StatusExp" alt="" size={24} />
+          Family skill peaks
+        </h2>
         <ul className="skill-list">
           {skillTotals
             .filter((row) => row.level > 0)
             .map((row) => (
               <li key={row.skill}>
-                <span>{row.skill}</span>
+                <span className="skill-list-label">
+                  <GameIcon path={skillIconPath(row.skill)} alt="" size={24} />
+                  {row.skill}
+                </span>
                 <strong>{row.level}</strong>
               </li>
             ))}

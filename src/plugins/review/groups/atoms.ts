@@ -1,6 +1,7 @@
 import type { AdvicePlugin } from '../../../core/plugins/registry';
 import type { AdviceItem } from '../../../core/parse/types';
 import { ATOM_LEVEL_CAP } from '../../../core/parse/catalogs';
+import { atomIconPath } from '../../../ui/icons/gameIcons';
 import { notReachedGroup, skillPeak } from './worldSkill';
 
 export const atomsAdvice: AdvicePlugin = {
@@ -47,7 +48,8 @@ export const atomsAdvice: AdvicePlugin = {
             ? `Not maxed: ${notMaxed.map((atom) => `${atom.name} ${atom.level}/${atom.max ?? ATOM_LEVEL_CAP}`).join(' · ')}.`
             : `All unlocked atoms are at max level (${ATOM_LEVEL_CAP}).`,
         severity: account.atomsUnlocked < 4 ? 'info' : 'good',
-        current: String(account.atomsUnlocked)
+        current: String(account.atomsUnlocked),
+        icons: notMaxed.map((atom) => atomIconPath(atom.name))
       });
     }
 

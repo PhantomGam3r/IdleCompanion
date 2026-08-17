@@ -92,16 +92,59 @@ h1, h2, h3 { margin: 0 0 0.35rem; }
 }
 .feature-grid li { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; }
 .stat-label { display: block; color: var(--muted); font-size: 0.8rem; }
+.stat-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.15rem;
+}
+.stat-card-head .stat-label { margin: 0; }
 .stat-card strong, .skill-list strong { font-size: 1.6rem; display: block; }
 .skill-list li {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0.55rem 0.75rem;
 }
+.skill-list-label, .table-icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.panel-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.game-icon {
+  image-rendering: pixelated;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+.icon-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0.35rem 0 0.1rem;
+}
+.advice-head-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.advice-item-main {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+.advice-item-main p { margin: 0.25rem 0 0; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--line); }
@@ -194,6 +237,9 @@ input, textarea {
   gap: 0.4rem;
 }
 .world-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: var(--bg-elev);
   color: var(--muted);
   border: 1px solid var(--line);

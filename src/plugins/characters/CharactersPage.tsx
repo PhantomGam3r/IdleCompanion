@@ -1,5 +1,7 @@
 import { useAccount } from '../../ui/AccountProvider';
 import { SKILL_NAMES } from '../../core/parse/parseSave';
+import { GameIcon } from '../../ui/icons/GameIcon';
+import { skillIconPath } from '../../ui/icons/gameIcons';
 
 export function CharactersPage() {
   const { account } = useAccount();
@@ -42,7 +44,12 @@ export function CharactersPage() {
             <tbody>
               {skills.map((skill) => (
                 <tr key={skill}>
-                  <td>{skill}</td>
+                  <td>
+                    <span className="table-icon-label">
+                      <GameIcon path={skillIconPath(skill)} alt="" size={22} />
+                      {skill}
+                    </span>
+                  </td>
                   {account.characters.map((character) => (
                     <td key={character.index}>{character.skills[skill] ?? 0}</td>
                   ))}
