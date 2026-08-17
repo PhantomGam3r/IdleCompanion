@@ -5,7 +5,6 @@ import { classNameFromId, parseSave } from './parseSave';
 const fixture = {
   charNames: ['Testor'],
   data: {
-    OptLacc: [],
     TimeAway: { GlobalTime: 1_700_000_000 },
     CharacterClass_0: 8,
     CurrentMap_0: 12,
@@ -41,7 +40,19 @@ const fixture = {
     KLA_0: [0, 25000, 120000, 0, 600000],
     Meals: [[0, 11, 4, 0]],
     Cooking: [[2], [2], [0]],
-    CauldronP2W: [[], [], [], [], [12, 2, 0, 0, 3, 1]]
+    CauldronP2W: [[], [], [], [], [12, 2, 0, 0, 3, 1]],
+    StarSg: { The_Buff_Guy: 1, Flexo_Bendo: '1', Locked: 0 },
+    UpgVault: [3, 0, 5],
+    Print: [0, 0, 0, 0, 0, 'Copper', 10, 'Iron', 4, 'Blank', 0],
+    Atoms: [1, 0, 2],
+    OptLacc: Object.assign([], { 55: 22, 85: 4, 89: 12 }),
+    Breeding: [[], [3, 2, 1]],
+    Lab: Array.from({ length: 16 }, (_, index) => (index === 14 ? [1, 0, 1] : index === 15 ? [2, 0] : [])),
+    Rift: [7],
+    Sailing: [[-1, -1, 0], [], [2, 1], [1, 2, 0, 1]],
+    Divinity: Array.from({ length: 26 }, (_, index) => (index === 25 ? 4 : 0)),
+    Gaming: [1500, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 'AB1'],
+    Cards1: ['Copper', 'Iron', 'Blank']
   }
 };
 
@@ -82,6 +93,21 @@ describe('parseSave', () => {
     expect(account.mealsUnlocked).toBe(2);
     expect(account.kitchensOwned).toBe(2);
     expect(account.sigilsUnlocked).toBe(2);
+    expect(account.starSignsUnlocked).toBe(2);
+    expect(account.vaultLevels).toBe(8);
+    expect(account.printerSamples).toBe(2);
+    expect(account.libraryBooks).toBe(22);
+    expect(account.atomsUnlocked).toBe(2);
+    expect(account.breedingPets).toBe(6);
+    expect(account.breedingArenaWave).toBe(12);
+    expect(account.labJewels).toBe(2);
+    expect(account.riftLevel).toBe(7);
+    expect(account.sailingIslands).toBe(2);
+    expect(account.sailingArtifacts).toBe(3);
+    expect(account.sailingBoats).toBe(2);
+    expect(account.divinityGods).toBe(4);
+    expect(account.gamingSuperbits).toBe(3);
+    expect(account.slabItems).toBe(2);
     expect(account.source).toBe('json');
   });
 

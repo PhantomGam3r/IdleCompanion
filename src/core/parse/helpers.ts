@@ -90,3 +90,13 @@ export function firstNumber(value: unknown): number {
   if (nums.length > 0) return nums[0] ?? 0;
   return asNumber(value);
 }
+
+export function toList(value: unknown): unknown[] {
+  const parsed = tryToParse(value);
+  if (Array.isArray(parsed)) return parsed;
+  const out: unknown[] = [];
+  forIndexed(parsed, (index, item) => {
+    out[index] = item;
+  });
+  return out;
+}
