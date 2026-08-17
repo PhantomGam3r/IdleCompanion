@@ -188,7 +188,25 @@ input, textarea {
   border-radius: 999px;
   padding: 0.15rem 0.55rem;
 }
-.world-block { display: grid; gap: 0.75rem; }
+.world-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.world-tabs button {
+  background: var(--bg-elev);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.world-tabs button.active {
+  color: #1a1404;
+  background: var(--gold);
+  border-color: var(--gold);
+}
 
 @media (max-width: 720px) {
   .nav { flex-wrap: wrap; }

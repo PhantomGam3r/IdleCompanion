@@ -21,7 +21,13 @@ const fixture = {
       [15, 0],
       [1]
     ],
-    CauldronInfo: [[12, 8, 0], [4], [1, 0], [20]]
+    CauldronInfo: [[12, 8, 0], [4], [1, 0], [20], { 0: 3, 1: 0, 2: 6 }],
+    BribeStatus: [1, 1, 0, -1, 1, 1],
+    StatueLevels_0: [[12, 1], [4, 0], [0, 0]],
+    Cards0: { Card1: 12, Card2: 0, MushCard: 3 },
+    AchieveReg: [1, 0, 1, 1],
+    GemItemsPurchased: [0, 2, 0, 1],
+    ForgeLV: [3, 10, 5, 0, 2, 1]
   }
 };
 
@@ -39,6 +45,33 @@ describe('parseSave', () => {
     expect(account.stampsCollected).toBe(4);
     expect(account.stampLevels).toBe(24);
     expect(account.bubbleLevels).toBe(45);
+    expect(account.vialsUnlocked).toBe(2);
+    expect(account.vialLevels).toBe(9);
+    expect(account.bribesPurchased).toBe(4);
+    expect(account.statues[0]?.level).toBe(12);
+    expect(account.statues[0]?.type).toBe('Gold');
+    expect(account.cardsFound).toBe(2);
+    expect(account.achievements).toBe(3);
+    expect(account.gemShopPurchases).toBe(2);
+    expect(account.forge[0]?.purchased).toBe(3);
     expect(account.source).toBe('json');
+  });
+
+  it('reads stamp and bubble maps stored as objects', () => {
+    const account = parseSave(
+      fromImportedJson({
+        charNames: ['Obj'],
+        data: {
+          CharacterClass_0: 1,
+          Lv0_0: { 0: 10, length: 1 },
+          StampLv: { 0: { 0: 7, 1: 2, length: 2 }, 1: { 0: 1, length: 1 }, 2: { length: 0 } },
+          CauldronInfo: [{ 0: 9, 1: 4, length: 2 }, { 0: 1, length: 1 }, {}, {}, { 0: 2, 3: 5 }]
+        }
+      })
+    );
+    expect(account.characters[0]?.combatLevel).toBe(10);
+    expect(account.stampLevels).toBe(10);
+    expect(account.bubbleLevels).toBe(14);
+    expect(account.vialLevels).toBe(7);
   });
 });

@@ -32,3 +32,38 @@ export function asRecord(value: unknown): Record<string, unknown> {
   }
   return {};
 }
+
+/** Idleon often stores lists as `{ "0": n, "1": n, length: n }` instead of JSON arrays. */
+export function asIndexedNumbers(value: unknown): number[] {
+  const parsed = tryToParse(value);
+  if (Array.isArray(parsed)) return parsed.map((item) => asNumber(item));
+  if (parsed && typeof parsed === 'object') {
+    const rec = parsed as Record<string, unknown>;
+    const keys = Object.keys(rec)
+      .filter((key) => key !== 'length' && /^\d+$/.test(key))
+      .map(Number)
+      .sort((a, b) => a - b);
+    if (keys.length === 0) return [];
+    const max = keys[keys.length - 1] ?? 0;
+    const out = Array.from({ length: max + 1 }, () => 0);
+    for (const key of keys) {
+      out[key] = asNumber(rec[String(key)]);
+    }
+    return out;
+  }
+  return [];
+}
+
+export function asIndexedRows(value: unknown): number[][] {
+  const parsed = tryToParse(value);
+  if (Array.isArray(parsed)) return parsed.map((row) => asIndexedNumbers(row));
+  if (parsed && typeof parsed === 'object') {
+    const rec = parsed as Record<string, unknown>;
+    const keys = Object.keys(rec)
+      .filter((key) => key !== 'length' && /^\d+$/.test(key))
+      .map(Number)
+      .sort((a, b) => a - b);
+    return keys.map((key) => asIndexedNumbers(rec[String(key)]));
+  }
+  return [];
+}
