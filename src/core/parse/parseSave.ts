@@ -1,6 +1,7 @@
 import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, klaToKills, numberToLetter, tryToParse, toList } from './helpers';
 import {
   ATOM_NAMES,
+  ATOM_LEVEL_CAP,
   BRIBE_SETS,
   COMPANION_NAMES,
   CONSTRUCTION_BUILDINGS,
@@ -760,7 +761,11 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const lab = parseLab(data);
   const sailing = parseSailing(data);
   const gaming = parseGaming(data);
-  const atoms = namedLevels(ATOM_NAMES, data.Atoms);
+  const atoms = namedLevels(
+    ATOM_NAMES,
+    data.Atoms,
+    ATOM_NAMES.map(() => ATOM_LEVEL_CAP)
+  );
   const shrines = parseShrines(data);
   const farming = parseFarming(data);
   const sneaking = parseSneaking(data);
