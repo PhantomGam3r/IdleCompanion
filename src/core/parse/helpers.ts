@@ -20,6 +20,12 @@ export function asNumber(value: unknown, fallback = 0): number {
   return fallback;
 }
 
+/** Whole-number display; rounds float artifacts like 17804.600000000006. */
+export function formatCount(value: number): string {
+  if (!Number.isFinite(value)) return '0';
+  return Math.round(value).toLocaleString('en-US');
+}
+
 export function asArray<T = unknown>(value: unknown): T[] {
   const parsed = tryToParse(value);
   return Array.isArray(parsed) ? (parsed as T[]) : [];

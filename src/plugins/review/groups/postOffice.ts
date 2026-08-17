@@ -1,6 +1,14 @@
 import type { AdvicePlugin } from '../../../core/plugins/registry';
 import type { AdviceItem } from '../../../core/parse/types';
+import { formatCount } from '../../../core/parse/helpers';
 import { notReachedGroup, skillPeak } from './worldSkill';
+
+const UNSPENT_THRESHOLD = 25;
+const UNSPENT_LIST_CAP = 8;
+
+function leftoverBoxes(earned: number, invested: number): number {
+  return Math.max(0, Math.round(earned) - Math.round(invested));
+}
 
 export const postOfficeAdvice: AdvicePlugin = {
   id: 'post-office',
@@ -17,7 +25,8 @@ export const postOfficeAdvice: AdvicePlugin = {
     }
 
     const items: AdviceItem[] = [];
-    const earned = account.postOfficeBoxesEarned;
+    const earned = Math.round(account.postOfficeBoxesEarned);
+    const earnedLabel = formatCount(earned);
     if (earned === 0) {
       items.push({
         title: 'No delivery boxes earned',
@@ -27,40 +36,51 @@ export const postOfficeAdvice: AdvicePlugin = {
       });
     } else {
       items.push({
-        title: `${earned} boxes earned`,
-        detail: 'Spend leftover boxes on Utilitarian Capsule, loot, and class-relevant crates. Unspent points do nothing.',
+        title: `${earnedLabel} Post Office boxes earned`,
+        detail: 'Spend leftover boxes on Utilitarian Capsule, loot, and class-relevant crates. Unspent boxes do nothing.',
         severity: 'good',
-        current: String(earned)
+        current: earnedLabel
       });
     }
 
     const unspent = account.characters
       .map((character) => ({
         name: character.name,
-        leftover: Math.max(0, earned - character.postOfficeInvested)
+        leftover: leftoverBoxes(earned, character.postOfficeInvested)
       }))
-      .filter((row) => row.leftover >= 25);
+      .filter((row) => row.leftover >= UNSPENT_THRESHOLD)
+      .sort((a, b) => b.leftover - a.leftover || a.name.localeCompare(b.name));
 
     if (unspent.length > 0) {
+      const shown = unspent.slice(0, UNSPENT_LIST_CAP);
+      const extra = unspent.length - shown.length;
+      const list = shown.map((row) => `${row.name} ${formatCount(row.leftover)}`).join(' · ');
+      const extraNote = extra > 0 ? ` · +${extra} more` : '';
+      const biggest = shown[0];
       items.push({
-        title: `${unspent.length} characters sitting on unspent boxes`,
-        detail: unspent
-          .slice(0, 4)
-          .map((row) => `${row.name} has ${row.leftover} unspent`)
-          .join('; ') + '. Dump them into a crate before you forget.',
+        title:
+          unspent.length === 1
+            ? `${biggest.name} has unspent Post Office boxes`
+            : `${unspent.length} characters have unspent Post Office boxes`,
+        detail: `${list}${extraNote}. Spend them on crate upgrades before they pile up.`,
         severity: 'warning',
-        current: String(unspent[0]?.leftover ?? 0)
+        current: formatCount(biggest.leftover)
       });
     }
 
     const empty = account.characters.filter((character) => character.postOfficeInvested === 0);
     if (earned > 0 && empty.length > 0) {
+      const names = empty
+        .slice(0, 3)
+        .map((character) => character.name)
+        .join(', ');
+      const extra = empty.length > 3 ? ` (+${empty.length - 3} more)` : '';
       items.push({
-        title: `${empty.length} characters have zero PO investment`,
-        detail: `Start with ${empty
-          .slice(0, 3)
-          .map((character) => character.name)
-          .join(', ')}. Even a few levels in damage or AFK crates help.`,
+        title:
+          empty.length === 1
+            ? `${empty[0]?.name} has no Post Office crates`
+            : `${empty.length} characters have no Post Office crates`,
+        detail: `Start with ${names}${extra}. Even a few levels in damage or AFK crates help.`,
         severity: 'warning'
       });
     }
@@ -69,7 +89,7 @@ export const postOfficeAdvice: AdvicePlugin = {
       id: 'post-office',
       world: 'World 2',
       title: 'Post Office',
-      summary: `${earned} earned`,
+      summary: `${earnedLabel} earned`,
       items
     };
   }

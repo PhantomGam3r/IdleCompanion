@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAccount } from '../../ui/AccountProvider';
+import { formatCount } from '../../core/parse/helpers';
 import { SKILL_NAMES } from '../../core/parse/parseSave';
 import { runReview } from '../review/engine';
 
@@ -115,7 +116,7 @@ export function DashboardPage() {
         </article>
         <article className="stat-card">
           <span className="stat-label">Post Office</span>
-          <strong>{account.postOfficeBoxesEarned}</strong>
+          <strong>{formatCount(account.postOfficeBoxesEarned)}</strong>
           <span className="muted">boxes earned</span>
         </article>
         <article className="stat-card">
@@ -226,7 +227,7 @@ export function DashboardPage() {
                   <td>{character.stats.agi}</td>
                   <td>{character.stats.wis}</td>
                   <td>{character.stats.luk}</td>
-                  <td>{character.postOfficeInvested}</td>
+                  <td>{formatCount(character.postOfficeInvested)}</td>
                 </tr>
               ))}
             </tbody>

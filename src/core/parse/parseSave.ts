@@ -134,7 +134,7 @@ function parseCharacter(data: Record<string, unknown>, index: number, name: stri
   });
   const classId = asNumber(data[`CharacterClass_${index}`]);
   const statsArr = asIndexedNumbers(data[`PVStatList_${index}`]);
-  const poLevels = asIndexedNumbers(data[`POu_${index}`]);
+  const poLevels = asIndexedNumbers(data[`POu_${index}`]).map((level) => Math.round(level));
   const postOfficeBoxes = POST_OFFICE_BOXES.map((boxName, boxIndex) => ({
     name: boxName,
     level: poLevels[boxIndex] ?? 0
@@ -357,10 +357,10 @@ function parseSigils(data: Record<string, unknown>): number {
 }
 
 function parsePostOfficeBoxes(data: Record<string, unknown>): number {
-  return (
+  return Math.round(
     asNumber(data.CYDeliveryBoxComplete) +
-    asNumber(data.CYDeliveryBoxStreak) +
-    asNumber(data.CYDeliveryBoxMisc)
+      asNumber(data.CYDeliveryBoxStreak) +
+      asNumber(data.CYDeliveryBoxMisc)
   );
 }
 
