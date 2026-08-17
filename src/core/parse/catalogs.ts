@@ -204,6 +204,9 @@ export const ATOM_NAMES = [
   'Aluminium'
 ];
 
+/** Indices 33–34 on each cauldron are unreleased filler “BUBBLE” slots. */
+export const REAL_BUBBLES_PER_CAULDRON = 33;
+
 export const COMPANION_NAMES = [
   "King Doot",
   "Rift Slug",
