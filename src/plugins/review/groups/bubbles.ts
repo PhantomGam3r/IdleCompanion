@@ -34,16 +34,6 @@ export const bubblesAdvice: AdvicePlugin = {
       });
     }
 
-    const low = leveled.filter((b) => b.level > 0 && b.level < 15);
-    if (low.length >= 8) {
-      items.push({
-        title: 'Many bubbles still under level 15',
-        detail: 'Cheap early levels are efficient. Raise a wide set of bubbles to 15–30 before stacking one dump bubble.',
-        severity: 'warning' as const,
-        current: String(low.length)
-      });
-    }
-
     const perColor = ['orange', 'green', 'purple', 'yellow'].map((color) => ({
       color,
       total: account.bubbles.filter((b) => b.color === color).reduce((sum, b) => sum + b.level, 0)

@@ -11,6 +11,7 @@ import {
   FORGE_UPGRADES,
   POST_OFFICE_BOXES,
   PRAYER_NAMES,
+  REAL_BUBBLES_PER_CAULDRON,
   REFINERY_SALTS,
   SALT_LICK_UPGRADES,
   STATUE_NAMES,
@@ -188,6 +189,7 @@ function parseBubbles(data: Record<string, unknown>): ParsedAccount['bubbles'] {
   BUBBLE_COLORS.forEach((color, colorIndex) => {
     const row = asIndexedNumbers(rows[colorIndex]);
     row.forEach((level, index) => {
+      if (index >= REAL_BUBBLES_PER_CAULDRON) return;
       bubbles.push({ color, index, level });
     });
   });
