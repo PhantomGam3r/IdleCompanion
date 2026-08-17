@@ -1,5 +1,6 @@
-import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, firstNumber, forIndexed, tryToParse } from './helpers';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, firstNumber, forIndexed, tryToParse, toList } from './helpers';
 import {
+  ATOM_NAMES,
   BRIBE_SETS,
   CONSTRUCTION_BUILDINGS,
   DEATH_NOTE_SKULLS,
@@ -355,6 +356,68 @@ function parsePostOfficeBoxes(data: Record<string, unknown>): number {
   );
 }
 
+function optNumber(data: Record<string, unknown>, index: number): number {
+  return asIndexedNumbers(data.OptLacc)[index] ?? 0;
+}
+
+function parsePrinterSamples(data: Record<string, unknown>): number {
+  const samples = toList(data.Print).slice(5);
+  let count = 0;
+  for (let index = 0; index < samples.length; index += 2) {
+    const name = samples[index];
+    if (typeof name === 'string' && name && name !== 'Blank') count += 1;
+  }
+  return count;
+}
+
+function parseLab(data: Record<string, unknown>): { jewels: number; chips: number } {
+  const lab = toList(data.Lab);
+  return {
+    jewels: asIndexedNumbers(lab[14]).filter((value) => value > 0).length,
+    chips: asIndexedNumbers(lab[15]).filter((value) => value > 0).length
+  };
+}
+
+function parseBreedingPets(data: Record<string, unknown>): number {
+  const breeding = toList(data.Breeding);
+  return asIndexedNumbers(breeding[1]).reduce((sum, value) => sum + Math.max(0, value), 0);
+}
+
+function parseSailing(data: Record<string, unknown>): {
+  islands: number;
+  artifacts: number;
+  artifactTiers: number;
+  boats: number;
+  captains: number;
+} {
+  const sailing = toList(data.Sailing);
+  const islands = asIndexedNumbers(sailing[0]);
+  const fleet = asIndexedNumbers(sailing[2]);
+  const artifacts = asIndexedNumbers(sailing[3]);
+  return {
+    islands: islands.filter((value) => value === -1).length,
+    artifacts: artifacts.filter((value) => value > 0).length,
+    artifactTiers: artifacts.reduce((sum, value) => sum + Math.max(0, value), 0),
+    captains: 1 + (fleet[0] ?? 0),
+    boats: 1 + (fleet[1] ?? 0)
+  };
+}
+
+function parseDivinityGods(data: Record<string, unknown>): number {
+  return Math.min(10, asIndexedNumbers(data.Divinity)[25] ?? 0);
+}
+
+function parseGaming(data: Record<string, unknown>): { bits: number; superbits: number } {
+  const gaming = toList(data.Gaming);
+  const bits = firstNumber(gaming[0]);
+  const superbits = typeof gaming[12] === 'string' ? gaming[12].replace(/[^A-Za-z0-9]/g, '').length : asNumber(gaming[12]);
+  return { bits, superbits };
+}
+
+function parseSlab(data: Record<string, unknown>): number {
+  return toList(data.Cards1).filter((item) => typeof item === 'string' && item && item !== 'Blank').length;
+}
+
 function countPositive(record: Record<string, unknown>): number {
   return Object.entries(record).filter(([key, value]) => key !== 'length' && asNumber(value) > 0).length;
 }
@@ -419,6 +482,10 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const arcade = asIndexedNumbers(data.ArcadeUpg);
   const meals = parseMeals(data);
   const deathNote = parseDeathNote(data, Math.max(count, characters.length));
+  const lab = parseLab(data);
+  const sailing = parseSailing(data);
+  const gaming = parseGaming(data);
+  const atoms = namedLevels(ATOM_NAMES, data.Atoms);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -460,6 +527,28 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     mealLevels: meals.reduce((sum, level) => sum + level, 0),
     kitchensOwned: parseKitchens(data),
     sigilsUnlocked: parseSigils(data),
+    starSignsUnlocked: countPositive(asRecord(data.StarSg)),
+    vaultLevels: asIndexedNumbers(data.UpgVault).reduce((sum, level) => sum + Math.max(0, level), 0),
+    vaultUpgrades: asIndexedNumbers(data.UpgVault).filter((level) => level > 0).length,
+    printerSamples: parsePrinterSamples(data),
+    libraryBooks: optNumber(data, 55),
+    atoms,
+    atomsUnlocked: atoms.filter((atom) => atom.level > 0).length,
+    breedingPets: parseBreedingPets(data),
+    breedingArenaWave: optNumber(data, 89),
+    breedingTerritory: optNumber(data, 85),
+    labJewels: lab.jewels,
+    labChips: lab.chips,
+    riftLevel: firstNumber(data.Rift),
+    sailingIslands: sailing.islands,
+    sailingArtifacts: sailing.artifacts,
+    sailingArtifactTiers: sailing.artifactTiers,
+    sailingBoats: sailing.boats,
+    sailingCaptains: sailing.captains,
+    divinityGods: parseDivinityGods(data),
+    gamingBits: gaming.bits,
+    gamingSuperbits: gaming.superbits,
+    slabItems: parseSlab(data),
     source: bundle.source,
     raw: data
   };

@@ -175,3 +175,19 @@ export const DEATH_NOTE_SKULLS = [
   { name: 'Lava Skull', kills: 100_000_000 },
   { name: 'Eclipse Skull', kills: 1_000_000_000 }
 ];
+
+export const ATOM_NAMES = [
+  'Hydrogen',
+  'Helium',
+  'Lithium',
+  'Beryllium',
+  'Boron',
+  'Carbon',
+  'Nitrogen',
+  'Oxygen',
+  'Fluoride',
+  'Neon',
+  'Sodium',
+  'Magnesium',
+  'Aluminium'
+];

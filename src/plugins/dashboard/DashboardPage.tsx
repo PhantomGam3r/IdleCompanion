@@ -134,6 +134,21 @@ export function DashboardPage() {
           <span className="muted">{account.kitchensOwned} kitchens</span>
         </article>
         <article className="stat-card">
+          <span className="stat-label">Rift</span>
+          <strong>{account.riftLevel}</strong>
+          <span className="muted">{account.breedingPets} pets</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Sailing</span>
+          <strong>{account.sailingArtifacts}</strong>
+          <span className="muted">{account.divinityGods} gods</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Slab / vault</span>
+          <strong>{account.slabItems}</strong>
+          <span className="muted">{account.vaultLevels} vault lv</span>
+        </article>
+        <article className="stat-card">
           <span className="stat-label">Source</span>
           <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
           <span className="muted">{bundle?.source}</span>
