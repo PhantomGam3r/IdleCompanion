@@ -49,20 +49,6 @@ export const stampsAdvice: AdvicePlugin = {
       });
     }
 
-    const combatStamps = delivered.filter((s) => s.category === 'combat');
-    const combatAvg = combatStamps.length
-      ? combatStamps.reduce((sum, s) => sum + s.level, 0) / combatStamps.length
-      : 0;
-    if (account.characters[0] && combatAvg + 20 < account.characters[0].combatLevel) {
-      items.push({
-        title: 'Combat stamps lag character level',
-        detail: 'Combat stamp average is well behind your first character. Prioritize Sword, Heart, and related combat stamps.',
-        severity: 'warning' as const,
-        current: String(Math.round(combatAvg)),
-        goal: `~${account.characters[0].combatLevel}`
-      });
-    }
-
     return {
       id: 'stamps',
       world: 'World 1',
