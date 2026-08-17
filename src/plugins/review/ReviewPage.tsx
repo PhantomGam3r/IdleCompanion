@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccount } from '../../ui/AccountProvider';
+import { GameIcon, IconRow } from '../../ui/icons/GameIcon';
+import { adviceGroupIcon, WORLD_ICONS } from '../../ui/icons/gameIcons';
 import { runReview } from './engine';
 import { WORLD_ORDER } from './groups/worldSkill';
 
@@ -47,48 +49,67 @@ export function ReviewPage() {
         <button className={worldFilter === 'All' ? 'active' : ''} type="button" onClick={() => setWorldFilter('All')}>
           All
         </button>
-        {worlds.map((world) => (
-          <button
-            key={world}
-            className={worldFilter === world ? 'active' : ''}
-            type="button"
-            onClick={() => setWorldFilter(world)}
-          >
-            {world}
-          </button>
-        ))}
+        {worlds.map((world) => {
+          const worldIcon = WORLD_ICONS[world];
+          return (
+            <button
+              key={world}
+              className={worldFilter === world ? 'active' : ''}
+              type="button"
+              onClick={() => setWorldFilter(world)}
+            >
+              {worldIcon ? <GameIcon path={worldIcon} alt="" size={20} /> : null}
+              {world}
+            </button>
+          );
+        })}
       </div>
 
-      {visible.map((group) => (
-        <article key={group.id} className="panel advice-card">
-          <header className="advice-head">
-            <div>
-              <p className="eyebrow">{group.world}</p>
-              <h3>{group.title}</h3>
-            </div>
-            <span className="muted">{group.summary}</span>
-          </header>
-          <ul className="advice-list">
-            {group.items.map((item) => (
-              <li key={`${group.id}:${item.title}`} className={`advice-item ${item.severity}`}>
+      {visible.map((group) => {
+        const groupIcon = adviceGroupIcon(group.id);
+        return (
+          <article key={group.id} className="panel advice-card">
+            <header className="advice-head">
+              <div className="advice-head-title">
+                {groupIcon ? <GameIcon path={groupIcon} alt="" size={36} /> : null}
                 <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
+                  <p className="eyebrow">{group.world}</p>
+                  <h3>{group.title}</h3>
                 </div>
-                <div className="advice-meta">
-                  <span className="pill">{SEVERITY_LABEL[item.severity]}</span>
-                  {item.current ? (
-                    <span className="muted">
-                      {item.current}
-                      {item.goal ? ` → ${item.goal}` : ''}
-                    </span>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </article>
-      ))}
+              </div>
+              <span className="muted">{group.summary}</span>
+            </header>
+            <ul className="advice-list">
+              {group.items.map((item) => {
+                const itemIcon = item.icon ?? groupIcon;
+                return (
+                  <li key={`${group.id}:${item.title}`} className={`advice-item ${item.severity}`}>
+                    <div className="advice-item-main">
+                      {itemIcon ? <GameIcon path={itemIcon} alt="" size={28} /> : null}
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.icons && item.icons.length > 0 ? (
+                          <IconRow paths={item.icons} size={22} />
+                        ) : null}
+                        <p>{item.detail}</p>
+                      </div>
+                    </div>
+                    <div className="advice-meta">
+                      <span className="pill">{SEVERITY_LABEL[item.severity]}</span>
+                      {item.current ? (
+                        <span className="muted">
+                          {item.current}
+                          {item.goal ? ` → ${item.goal}` : ''}
+                        </span>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </article>
+        );
+      })}
     </div>
   );
 }

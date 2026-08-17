@@ -1,6 +1,7 @@
 import type { AdvicePlugin } from '../../../core/plugins/registry';
 import type { AdviceItem } from '../../../core/parse/types';
 import { getAdvicePlugins } from '../../../core/plugins/registry';
+import { adviceGroupIcon } from '../../../ui/icons/gameIcons';
 
 export const pinchyAdvice: AdvicePlugin = {
   id: 'pinchy',
@@ -9,8 +10,14 @@ export const pinchyAdvice: AdvicePlugin = {
   evaluate(account) {
     const items: AdviceItem[] = getAdvicePlugins()
       .filter((plugin) => plugin.id !== 'pinchy')
-      .flatMap((plugin) => plugin.evaluate(account)?.items ?? [])
-      .filter((item) => item.severity === 'warning')
+      .flatMap((plugin) =>
+        (plugin.evaluate(account)?.items ?? [])
+          .filter((item) => item.severity === 'warning')
+          .map((item) => ({
+            ...item,
+            icon: item.icon ?? adviceGroupIcon(plugin.id)
+          }))
+      )
       .slice(0, 8);
 
     if (items.length === 0) {

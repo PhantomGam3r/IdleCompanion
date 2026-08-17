@@ -199,6 +199,10 @@ export type AdviceItem = {
   severity: AdviceSeverity;
   current?: string;
   goal?: string;
+  /** Idleon Toolbox asset path, e.g. data/ConTower8 */
+  icon?: string;
+  /** Extra inline icons (e.g. atom sprites for not-maxed upgrades). */
+  icons?: string[];
 };
 
 export type AdviceGroup = {
