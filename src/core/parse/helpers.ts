@@ -108,3 +108,10 @@ export function countIndexedKeys(value: unknown): number {
   });
   return count;
 }
+
+/** Idleon jade-emporium unlocks are stored as letters: 0→a … 25→z, 26→A. */
+export function numberToLetter(index: number): string {
+  if (index < 0 || !Number.isFinite(index)) return '';
+  if (index < 26) return String.fromCharCode(97 + index);
+  return String.fromCharCode(65 + (index - 26));
+}

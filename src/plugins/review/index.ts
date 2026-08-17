@@ -13,6 +13,7 @@ import { forgeAdvice } from './groups/forge';
 import { starSignsAdvice } from './groups/starSigns';
 import { vaultAdvice } from './groups/vault';
 import { owlAdvice } from './groups/owl';
+import { companionsAdvice } from './groups/companions';
 import { alchemyAdvice } from './groups/alchemy';
 import { bubblesAdvice } from './groups/bubbles';
 import { vialsAdvice } from './groups/vials';
@@ -25,6 +26,7 @@ import { obolsAdvice } from './groups/obols';
 import { buildingsAdvice } from './groups/buildings';
 import { shrinesAdvice } from './groups/shrines';
 import { equinoxAdvice } from './groups/equinox';
+import { armorSetsAdvice } from './groups/armorSets';
 import { deathNoteAdvice } from './groups/deathNote';
 import { prayersAdvice } from './groups/prayers';
 import { worshipTotemsAdvice } from './groups/worshipTotems';
@@ -33,6 +35,7 @@ import { refineryAdvice } from './groups/refinery';
 import { printerAdvice } from './groups/printer';
 import { atomsAdvice } from './groups/atoms';
 import { mealsAdvice } from './groups/meals';
+import { tomeAdvice } from './groups/tome';
 import { riftAdvice } from './groups/rift';
 import { breedingPetsAdvice } from './groups/breeding';
 import { labAdvice } from './groups/lab';
@@ -42,8 +45,10 @@ import { gamingAdviceGroup } from './groups/gamingBits';
 import { slabAdvice } from './groups/slab';
 import { cavernsAdvice } from './groups/caverns';
 import { farmingCropsAdvice } from './groups/farmingCrops';
+import { cropDepotAdvice } from './groups/cropDepot';
 import { sneakingJadeAdvice } from './groups/sneakingJade';
 import { summoningWinsAdvice } from './groups/summoningWins';
+import { emperorAdvice } from './groups/emperor';
 import { coralReefAdvice } from './groups/coralReef';
 import { cogsAdvice } from './groups/cogs';
 import { grimoireAdvice } from './groups/grimoire';
@@ -52,6 +57,8 @@ import { tesseractAdvice } from './groups/tesseract';
 import { researchAdvice } from './groups/research';
 import { mineheadAdvice } from './groups/minehead';
 import { legendTalentsAdvice } from './groups/legendTalents';
+import { sushiAdvice } from './groups/sushi';
+import { buttonAdvice } from './groups/button';
 import {
   breedingAdvice,
   constructionAdvice,
@@ -81,6 +88,7 @@ export function reviewPlugin() {
   registerAdvice(starSignsAdvice);
   registerAdvice(vaultAdvice);
   registerAdvice(owlAdvice);
+  registerAdvice(companionsAdvice);
   registerAdvice(alchemyAdvice);
   registerAdvice(bubblesAdvice);
   registerAdvice(vialsAdvice);
@@ -96,6 +104,7 @@ export function reviewPlugin() {
   registerAdvice(buildingsAdvice);
   registerAdvice(shrinesAdvice);
   registerAdvice(equinoxAdvice);
+  registerAdvice(armorSetsAdvice);
   registerAdvice(cogsAdvice);
   registerAdvice(deathNoteAdvice);
   registerAdvice(prayersAdvice);
@@ -106,6 +115,7 @@ export function reviewPlugin() {
   registerAdvice(atomsAdvice);
   registerAdvice(cookingAdvice);
   registerAdvice(mealsAdvice);
+  registerAdvice(tomeAdvice);
   registerAdvice(breedingAdvice);
   registerAdvice(breedingPetsAdvice);
   registerAdvice(laboratoryAdvice);
@@ -121,10 +131,12 @@ export function reviewPlugin() {
   registerAdvice(cavernsAdvice);
   registerAdvice(farmingAdvice);
   registerAdvice(farmingCropsAdvice);
+  registerAdvice(cropDepotAdvice);
   registerAdvice(sneakingAdvice);
   registerAdvice(sneakingJadeAdvice);
   registerAdvice(summoningAdvice);
   registerAdvice(summoningWinsAdvice);
+  registerAdvice(emperorAdvice);
   registerAdvice(grimoireAdvice);
   registerAdvice(compassAdvice);
   registerAdvice(tesseractAdvice);
@@ -133,6 +145,8 @@ export function reviewPlugin() {
   registerAdvice(researchAdvice);
   registerAdvice(mineheadAdvice);
   registerAdvice(legendTalentsAdvice);
+  registerAdvice(sushiAdvice);
+  registerAdvice(buttonAdvice);
   registerAdvice(pinchyAdvice);
   registerPlugin({
     id: 'review',

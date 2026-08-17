@@ -53,10 +53,19 @@ const fixture = {
       161: 50,
       162: 10,
       169: '_dcabe',
+      196: 1,
+      197: 1,
+      221: 80,
       258: 2,
       262: 5,
       265: 1,
-      319: 4
+      319: 4,
+      369: 12,
+      379: ',W1_SET,W2_SET',
+      380: 1,
+      381: 40,
+      594: 18,
+      595: 2
     }),
     Breeding: [[], [3, 2, 1]],
     Lab: Array.from({ length: 16 }, (_, index) => (index === 14 ? [1, 0, 1] : index === 15 ? [2, 0] : [])),
@@ -77,7 +86,7 @@ const fixture = {
     FarmCrop: { 0: 10, 1: 0, 4: 3 },
     FarmRank: [[2, 1, 0], 0, [1]],
     Ninja: Object.assign([], {
-      102: [0, 500, 0, 0, 0, 0, 0, 0, 0, 'ab'],
+      102: [0, 500, 0, 0, 0, 0, 0, 0, 0, 'abwxyz'],
       103: [3, 2, 1],
       107: [1, 0, 1]
     }),
@@ -96,6 +105,13 @@ const fixture = {
       2: [1, 1, 0],
       7: [0, 0, 0, 0, 8],
       8: [2, 0, 1]
+    }),
+    companion: { l: ['0,1', '1,0', '4,1'] },
+    Sushi: Object.assign([], {
+      0: [0, 1, 2, -1],
+      2: [3, 0, 2],
+      4: [40, 0, 8, 250],
+      5: [1, 0, 2, -1]
     })
   }
 };
@@ -162,7 +178,7 @@ describe('parseSave', () => {
     expect(account.shrinesUnlocked).toBe(2);
     expect(account.farmCrops).toBe(3);
     expect(account.farmPlots).toBe(4);
-    expect(account.sneakingJadeUpgrades).toBe(2);
+    expect(account.sneakingJadeUpgrades).toBe(6);
     expect(account.summonWins).toBe(2);
     expect(account.summonEndless).toBe(4);
     expect(account.cavernsUnlocked).toBe(5);
@@ -177,6 +193,21 @@ describe('parseSave', () => {
     expect(account.researchCells).toBe(2);
     expect(account.mineheadOpponents).toBe(8);
     expect(account.legendTalents).toBe(2);
+    expect(account.companionsOwned).toBe(3);
+    expect(account.companionNames).toEqual(['King Doot', 'Rift Slug', 'Sheepie']);
+    expect(account.tomeBluePages).toBe(true);
+    expect(account.tomeRedPages).toBe(true);
+    expect(account.tomeTrackedScore).toBeGreaterThan(0);
+    expect(account.sushiSlots).toBe(3);
+    expect(account.sushiUnique).toBe(3);
+    expect(account.sushiBucks).toBe(250);
+    expect(account.buttonPresses).toBe(18);
+    expect(account.buttonInstaSkips).toBe(2);
+    expect(account.cropDepotScientist).toBe(true);
+    expect(account.cropDepotScience).toBeGreaterThanOrEqual(1);
+    expect(account.magicBeanTrade).toBe(80);
+    expect(account.emperorShowdown).toBe(12);
+    expect(account.armorSetsUnlocked).toBe(2);
     expect(account.source).toBe('json');
   });
 

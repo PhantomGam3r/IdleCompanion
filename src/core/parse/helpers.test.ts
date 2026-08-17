@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber } from './helpers';
+import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber, numberToLetter } from './helpers';
 
 describe('asIndexedNumbers', () => {
   it('reads JSON arrays', () => {
@@ -36,5 +36,13 @@ describe('firstNumber', () => {
 describe('countIndexedKeys', () => {
   it('counts numeric keys including zeros', () => {
     expect(countIndexedKeys({ 0: 10, 1: 0, 4: 3, length: 5 })).toBe(3);
+  });
+});
+
+describe('numberToLetter', () => {
+  it('maps jade-emporium indices to unlock letters', () => {
+    expect(numberToLetter(0)).toBe('a');
+    expect(numberToLetter(22)).toBe('w');
+    expect(numberToLetter(38)).toBe('M');
   });
 });
