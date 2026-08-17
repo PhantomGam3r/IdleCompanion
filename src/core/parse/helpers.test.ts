@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asIndexedNumbers, asIndexedRows } from './helpers';
+import { asIndexedNumbers, asIndexedRows, firstNumber } from './helpers';
 
 describe('asIndexedNumbers', () => {
   it('reads JSON arrays', () => {
@@ -22,5 +22,13 @@ describe('asIndexedRows', () => {
       [10, 8],
       [5]
     ]);
+  });
+});
+
+describe('firstNumber', () => {
+  it('reads a scalar or the first indexed value', () => {
+    expect(firstNumber(42)).toBe(42);
+    expect(firstNumber([9001, 2])).toBe(9001);
+    expect(firstNumber({ 0: 25000, 1: 3 })).toBe(25000);
   });
 });

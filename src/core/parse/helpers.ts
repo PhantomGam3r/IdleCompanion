@@ -67,3 +67,26 @@ export function asIndexedRows(value: unknown): number[][] {
   }
   return [];
 }
+
+export function forIndexed(value: unknown, visit: (index: number, item: unknown) => void): void {
+  const parsed = tryToParse(value);
+  if (Array.isArray(parsed)) {
+    parsed.forEach((item, index) => visit(index, item));
+    return;
+  }
+  if (parsed && typeof parsed === 'object') {
+    const rec = parsed as Record<string, unknown>;
+    const keys = Object.keys(rec)
+      .filter((key) => key !== 'length' && /^\d+$/.test(key))
+      .map(Number)
+      .sort((a, b) => a - b);
+    for (const key of keys) visit(key, rec[String(key)]);
+  }
+}
+
+export function firstNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const nums = asIndexedNumbers(value);
+  if (nums.length > 0) return nums[0] ?? 0;
+  return asNumber(value);
+}

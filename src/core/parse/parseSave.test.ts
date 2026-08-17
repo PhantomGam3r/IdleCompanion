@@ -27,7 +27,21 @@ const fixture = {
     Cards0: { Card1: 12, Card2: 0, MushCard: 3 },
     AchieveReg: [1, 0, 1, 1],
     GemItemsPurchased: [0, 2, 0, 1],
-    ForgeLV: [3, 10, 5, 0, 2, 1]
+    ForgeLV: [3, 10, 5, 0, 2, 1],
+    POu_0: [20, 0, 0, 5],
+    CYDeliveryBoxComplete: 80,
+    CYDeliveryBoxStreak: 10,
+    CYDeliveryBoxMisc: 10,
+    Tower: [4, 10, 1, 0, 2],
+    SaltLick: [3, 1, 0],
+    PrayOwned: [4, 0, 0, 0, 2],
+    TotemInfo: [[12, 0, 3]],
+    Refinery: [[], [], [], [0, 5, 0, 1], [0, 2, 0, 0]],
+    ArcadeUpg: [4, 0, 2],
+    KLA_0: [0, 25000, 120000, 0, 600000],
+    Meals: [[0, 11, 4, 0]],
+    Cooking: [[2], [2], [0]],
+    CauldronP2W: [[], [], [], [], [12, 2, 0, 0, 3, 1]]
   }
 };
 
@@ -54,6 +68,20 @@ describe('parseSave', () => {
     expect(account.achievements).toBe(3);
     expect(account.gemShopPurchases).toBe(2);
     expect(account.forge[0]?.purchased).toBe(3);
+    expect(account.postOfficeBoxesEarned).toBe(100);
+    expect(account.characters[0]?.postOfficeInvested).toBe(25);
+    expect(account.buildingsUnlocked).toBe(4);
+    expect(account.buildings.find((row) => row.name === 'Death Note')?.level).toBe(1);
+    expect(account.saltLick[0]?.level).toBe(3);
+    expect(account.prayersUnlocked).toBe(2);
+    expect(account.worshipPeakWave).toBe(12);
+    expect(account.refinery[0]?.level).toBe(5);
+    expect(account.arcadeUpgrades).toBe(2);
+    expect(account.deathNote.mapsWithKills).toBe(3);
+    expect(account.deathNote.goldSkulls).toBe(1);
+    expect(account.mealsUnlocked).toBe(2);
+    expect(account.kitchensOwned).toBe(2);
+    expect(account.sigilsUnlocked).toBe(2);
     expect(account.source).toBe('json');
   });
 

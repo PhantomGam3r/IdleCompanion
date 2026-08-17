@@ -114,6 +114,26 @@ export function DashboardPage() {
           <strong>{account.cardsFound}</strong>
         </article>
         <article className="stat-card">
+          <span className="stat-label">Post Office</span>
+          <strong>{account.postOfficeBoxesEarned}</strong>
+          <span className="muted">boxes earned</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Death Note</span>
+          <strong>{account.deathNote.mapsWithKills}</strong>
+          <span className="muted">{account.deathNote.lowestSkull}</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Buildings</span>
+          <strong>{account.buildingsUnlocked}</strong>
+          <span className="muted">{account.prayersUnlocked} prayers</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Meals</span>
+          <strong>{account.mealsUnlocked}</strong>
+          <span className="muted">{account.kitchensOwned} kitchens</span>
+        </article>
+        <article className="stat-card">
           <span className="stat-label">Source</span>
           <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
           <span className="muted">{bundle?.source}</span>
@@ -133,6 +153,7 @@ export function DashboardPage() {
                 <th>AGI</th>
                 <th>WIS</th>
                 <th>LUK</th>
+                <th>PO</th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +166,7 @@ export function DashboardPage() {
                   <td>{character.stats.agi}</td>
                   <td>{character.stats.wis}</td>
                   <td>{character.stats.luk}</td>
+                  <td>{character.postOfficeInvested}</td>
                 </tr>
               ))}
             </tbody>
