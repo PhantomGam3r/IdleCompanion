@@ -1,8 +1,11 @@
-import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, tryToParse, toList } from './helpers';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, numberToLetter, tryToParse, toList } from './helpers';
 import {
   ATOM_NAMES,
   BRIBE_SETS,
+  COMPANION_NAMES,
   CONSTRUCTION_BUILDINGS,
+  CROP_DEPOT_SCIENCE_INDICES,
+  CROP_DEPOT_SCIENTIST_INDEX,
   ISLAND_CODES,
   DEATH_NOTE_SKULLS,
   FORGE_UPGRADES,
@@ -505,16 +508,109 @@ function parseSneaking(data: Record<string, unknown>): {
   jadeUpgrades: number;
   ninjaLevels: number;
   charms: number;
+  cropDepotScientist: boolean;
+  cropDepotScience: number;
 } {
   const ninja = toList(data.Ninja);
   const extra = toList(ninja[102]);
   const unlocks = extra[9];
-  const jadeUpgrades =
-    typeof unlocks === 'string' ? new Set(unlocks.replace(/[^A-Za-z]/g, '').split('').filter(Boolean)).size : 0;
+  const letters = typeof unlocks === 'string' ? unlocks.replace(/[^A-Za-z]/g, '') : '';
+  const jadeUpgrades = new Set(letters.split('').filter(Boolean)).size;
   return {
     jadeUpgrades,
     ninjaLevels: asIndexedNumbers(ninja[103]).reduce((sum, level) => sum + Math.max(0, level), 0),
-    charms: asIndexedNumbers(ninja[107]).filter((value) => value > 0).length
+    charms: asIndexedNumbers(ninja[107]).filter((value) => value > 0).length,
+    cropDepotScientist: letters.includes(numberToLetter(CROP_DEPOT_SCIENTIST_INDEX)),
+    cropDepotScience: CROP_DEPOT_SCIENCE_INDICES.filter((index) =>
+      letters.includes(numberToLetter(index))
+    ).length
+  };
+}
+
+function companionName(id: number): string {
+  return COMPANION_NAMES[id] ?? `Companion ${id}`;
+}
+
+function collectCompanionIds(source: unknown, ids: Set<number>): boolean {
+  if (source == null) return false;
+  const rec = asRecord(source);
+  const list = rec.l !== undefined ? rec.l : source;
+  let found = false;
+  forIndexed(list, (_index, item) => {
+    if (typeof item === 'number' && Number.isFinite(item)) {
+      ids.add(item);
+      found = true;
+      return;
+    }
+    if (typeof item === 'string' && item && item !== 'Blank') {
+      const id = Number(item.split(',')[0]);
+      if (Number.isFinite(id)) {
+        ids.add(id);
+        found = true;
+      }
+    }
+  });
+  return found || rec.l !== undefined || rec.e !== undefined;
+}
+
+function parseCompanions(
+  bundle: RawSaveBundle,
+  data: Record<string, unknown>
+): { present: boolean; owned: number; names: string[] } {
+  const ids = new Set<number>();
+  const present =
+    collectCompanionIds(bundle.companion, ids) ||
+    collectCompanionIds(data.companion, ids) ||
+    collectCompanionIds(data.companions, ids);
+  const names = [...ids]
+    .sort((a, b) => a - b)
+    .map((id) => companionName(id));
+  return { present, owned: ids.size, names };
+}
+
+function parseSushi(data: Record<string, unknown>): {
+  slots: number;
+  unique: number;
+  upgradeLevels: number;
+  fuel: number;
+  sparks: number;
+  bucks: number;
+} {
+  const sushi = toList(data.Sushi);
+  let slots = 0;
+  forIndexed(sushi[0], (_index, item) => {
+    if (asNumber(item, -1) >= 0) slots += 1;
+  });
+  const uniqueTrack = toList(sushi[5]);
+  let unique = 0;
+  for (let index = 0; index <= 58; index += 1) {
+    const value = uniqueTrack[index];
+    const tracked = value === undefined || value === null ? -1 : asNumber(value, -1);
+    if (tracked >= 0) unique = index + 1;
+    else break;
+  }
+  const misc = asIndexedNumbers(sushi[4]);
+  return {
+    slots,
+    unique,
+    upgradeLevels: sumLevels(sushi[2]),
+    fuel: misc[0] ?? 0,
+    sparks: misc[2] ?? 0,
+    bucks: misc[3] ?? 0
+  };
+}
+
+function parseArmorSets(data: Record<string, unknown>): { unlocked: boolean; sets: number; days: number } {
+  const raw = String(optRaw(data, 379) ?? '');
+  const sets = raw
+    .split(',')
+    .slice(1)
+    .map((name) => name.trim())
+    .filter((name) => name && name !== '0');
+  return {
+    unlocked: optTruthy(data, 380) || sets.length > 0,
+    sets: sets.length,
+    days: optNumber(data, 381)
   };
 }
 
@@ -666,6 +762,9 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const cogs = parseCogs(data);
   const compass = parseCompass(data);
   const research = parseResearch(data);
+  const companions = parseCompanions(bundle, data);
+  const sushi = parseSushi(data);
+  const armor = parseArmorSets(data);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -767,6 +866,38 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     mineheadOpponents: research.mineheadOpponents,
     mineheadUpgrades: research.mineheadUpgrades,
     legendTalents: parseLegendTalents(data),
+    companionDataPresent: companions.present,
+    companionsOwned: companions.owned,
+    companionNames: companions.names,
+    tomeBluePages: optTruthy(data, 196),
+    tomeRedPages: optTruthy(data, 197),
+    tomeTrackedScore:
+      stamps.filter((stamp) => stamp.level > 0).length +
+      statues.filter((statue) => statue.level > 0).length +
+      countPositive(cards) +
+      achievements.filter((value) => value > 0).length +
+      parsePostOfficeBoxes(data) +
+      bubbles.filter((bubble) => bubble.level > 0).length +
+      vials.filter((level) => level > 0).length +
+      parseSlab(data) +
+      farming.crops +
+      sailing.artifacts +
+      arcade.filter((level) => level > 0).length,
+    sushiSlots: sushi.slots,
+    sushiUnique: sushi.unique,
+    sushiUpgradeLevels: sushi.upgradeLevels,
+    sushiFuel: sushi.fuel,
+    sushiSparks: sushi.sparks,
+    sushiBucks: sushi.bucks,
+    buttonPresses: optNumber(data, 594),
+    buttonInstaSkips: optNumber(data, 595),
+    cropDepotScientist: sneaking.cropDepotScientist,
+    cropDepotScience: sneaking.cropDepotScience,
+    magicBeanTrade: optNumber(data, 221),
+    emperorShowdown: optNumber(data, 369),
+    armorSmithyUnlocked: armor.unlocked,
+    armorSetsUnlocked: armor.sets,
+    armorSmithyDays: armor.days,
     source: bundle.source,
     raw: data
   };

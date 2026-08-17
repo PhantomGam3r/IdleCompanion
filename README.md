@@ -11,9 +11,9 @@ Not affiliated with Lava / Legends of Idleon.
 - **Google game login** via OAuth device flow (works on `*.github.io`)
 - **Email / password** login with the same Idleon credentials
 - **Live cloudsave** from Firestore `_data/{uid}` plus character names from Realtime DB
-- **Dashboard** — characters, alerts, stamps, bubbles, bribes, statues, cards, post office, death note, rift, sailing, slab, islands, farming, caverns, cogs, master classes, research
+- **Dashboard** — characters, alerts, stamps, bubbles, bribes, statues, cards, post office, death note, rift, sailing, slab, islands, farming, caverns, cogs, master classes, research, companions, sushi, The Button
 - **Characters** — skill matrix across the roster
-- **AutoReview** — Pinchy-style “do this first” plus General / W1–W7 groups (stamps, vault, owl, alchemy, post office, islands, construction, cogs, death note, printer, atoms, meals, breeding, lab, rift, sailing, divinity, gaming, slab, caverns, farming, sneaking, summoning, grimoire, compass, tesseract, coral reef, research, minehead, legend talents)
+- **AutoReview** — Pinchy-style “do this first” plus General / W1–W7 groups (stamps, vault, owl, companions, alchemy, post office, islands, construction, cogs, armor sets, death note, printer, atoms, meals, tome, breeding, lab, rift, sailing, divinity, gaming, slab, caverns, farming, crop depot, sneaking, summoning, emperor, grimoire, compass, tesseract, coral reef, research, minehead, legend talents, sushi, The Button)
 - **JSON import** for Toolbox / Efficiency / raw game saves
 - **Plugin registry** so new pages and advice groups can be added without touching the shell
 

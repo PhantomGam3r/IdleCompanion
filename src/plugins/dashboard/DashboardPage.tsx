@@ -184,6 +184,16 @@ export function DashboardPage() {
           <span className="muted">{account.mineheadOpponents} minehead</span>
         </article>
         <article className="stat-card">
+          <span className="stat-label">Companions</span>
+          <strong>{account.companionDataPresent ? account.companionsOwned : '—'}</strong>
+          <span className="muted">{account.tomeBluePages || account.tomeRedPages ? 'tome pages' : 'no extra tome pages'}</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Sushi / Button</span>
+          <strong>{account.sushiUnique}</strong>
+          <span className="muted">{account.buttonPresses} presses</span>
+        </article>
+        <article className="stat-card">
           <span className="stat-label">Source</span>
           <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
           <span className="muted">{bundle?.source}</span>
