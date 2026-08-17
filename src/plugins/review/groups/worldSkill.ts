@@ -78,3 +78,7 @@ export function notReachedGroup(
 export function skillPeak(account: ParsedAccount, skill: string): number {
   return Math.max(...account.characters.map((character) => character.skills[skill] ?? 0), 0);
 }
+
+export function hasClass(account: ParsedAccount, className: string): boolean {
+  return account.characters.some((character) => character.className === className);
+}

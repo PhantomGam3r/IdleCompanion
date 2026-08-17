@@ -169,6 +169,21 @@ export function DashboardPage() {
           <span className="muted">{account.coralUnlocked} corals</span>
         </article>
         <article className="stat-card">
+          <span className="stat-label">Cog board</span>
+          <strong>{account.cogsPlaced}</strong>
+          <span className="muted">{account.flagsComplete} flags</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Master classes</span>
+          <strong>{account.grimoireLevels}</strong>
+          <span className="muted">{account.compassLevels} compass</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Research</span>
+          <strong>{account.researchCells}</strong>
+          <span className="muted">{account.mineheadOpponents} minehead</span>
+        </article>
+        <article className="stat-card">
           <span className="stat-label">Source</span>
           <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
           <span className="muted">{bundle?.source}</span>

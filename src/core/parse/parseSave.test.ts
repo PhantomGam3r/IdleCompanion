@@ -73,7 +73,7 @@ const fixture = {
       [0, 0, 0, 0, 0, 0],
       [1, 0, 0, 3, 2, 0]
     ],
-    FarmUpg: [0, 12, 3, 1],
+    FarmUpg: Object.assign([0, 12, 3, 1], { 20: 2, 21: 1 }),
     FarmCrop: { 0: 10, 1: 0, 4: 3 },
     FarmRank: [[2, 1, 0], 0, [1]],
     Ninja: Object.assign([], {
@@ -83,7 +83,20 @@ const fixture = {
     }),
     Summon: [[2, 0, 4], ['Pet1', 'Pet2'], [10, 0, 5]],
     Holes: Object.assign([], { 1: [5, 2, 1], 7: [1, 1, 0], 13: [1, 1, 1, 0] }),
-    Spelunk: Object.assign([], { 12: [1, 1, 0], 13: [2, 1, 0] })
+    Spelunk: Object.assign([], { 12: [1, 1, 0], 13: [2, 1, 0], 18: [2, 0, 1] }),
+    CogO: Array.from({ length: 96 }, (_, index) =>
+      index === 0 ? 'Player_Testor' : index < 12 ? 'Cog1A0' : 'Blank'
+    ),
+    FlagU: [-11, -11, 50],
+    Grimoire: [3, 0, 2, 1],
+    Compass: [[2, 0, 4], [1, 0, 1], [], ['mushG', 'frogG']],
+    Arcane: [1, 0, 3],
+    Research: Object.assign([], {
+      0: [1, 0, 2],
+      2: [1, 1, 0],
+      7: [0, 0, 0, 0, 8],
+      8: [2, 0, 1]
+    })
   }
 };
 
@@ -154,6 +167,16 @@ describe('parseSave', () => {
     expect(account.summonEndless).toBe(4);
     expect(account.cavernsUnlocked).toBe(5);
     expect(account.coralUnlocked).toBe(2);
+    expect(account.cogsPlaced).toBe(12);
+    expect(account.flagsComplete).toBe(2);
+    expect(account.grimoireLevels).toBe(6);
+    expect(account.compassLevels).toBe(6);
+    expect(account.compassAbominations).toBe(2);
+    expect(account.tesseractLevels).toBe(4);
+    expect(account.farmExoticLevels).toBe(3);
+    expect(account.researchCells).toBe(2);
+    expect(account.mineheadOpponents).toBe(8);
+    expect(account.legendTalents).toBe(2);
     expect(account.source).toBe('json');
   });
 
