@@ -484,17 +484,20 @@ function parseFarming(data: Record<string, unknown>): {
   plots: number;
   marketLevels: number;
   landRanks: number;
+  exoticLevels: number;
 } {
   const upgrades = asIndexedNumbers(data.FarmUpg);
   const crops = countIndexedKeys(data.FarmCrop);
   const started = upgrades.length > 0 || crops > 0;
   const market = upgrades.slice(2, 20);
+  const exotic = upgrades.slice(20);
   const ranks = asIndexedNumbers(toList(data.FarmRank)[0]);
   return {
     crops,
     plots: started ? 1 + (upgrades[2] ?? 0) : 0,
     marketLevels: market.reduce((sum, level) => sum + Math.max(0, level), 0),
-    landRanks: ranks.filter((level) => level > 0).length
+    landRanks: ranks.filter((level) => level > 0).length,
+    exoticLevels: exotic.reduce((sum, level) => sum + Math.max(0, level), 0)
   };
 }
 
@@ -540,6 +543,51 @@ function parseCaverns(data: Record<string, unknown>): {
 
 function parseCoral(data: Record<string, unknown>): number {
   return asIndexedNumbers(toList(data.Spelunk)[12]).filter((value) => value > 0).length;
+}
+
+const COG_BOARD_SIZE = 96;
+
+function parseCogs(data: Record<string, unknown>): { placed: number; flags: number } {
+  const order = toList(data.CogO ?? data.CogOrder).slice(0, COG_BOARD_SIZE);
+  const placed = order.filter((name) => typeof name === 'string' && name && name !== 'Blank').length;
+  const flags = asIndexedNumbers(data.FlagU ?? data.FlagUnlock).filter((value) => value === -11).length;
+  return { placed, flags };
+}
+
+function sumLevels(value: unknown): number {
+  return asIndexedNumbers(value).reduce((sum, level) => sum + Math.max(0, level), 0);
+}
+
+function parseCompass(data: Record<string, unknown>): {
+  levels: number;
+  abominations: number;
+  medallions: number;
+} {
+  const compass = toList(data.Compass);
+  return {
+    levels: sumLevels(compass[0]),
+    abominations: asIndexedNumbers(compass[1]).filter((value) => value > 0).length,
+    medallions: toList(compass[3]).filter((id) => typeof id === 'string' && id && id !== 'Blank').length
+  };
+}
+
+function parseResearch(data: Record<string, unknown>): {
+  cells: number;
+  occurrences: number;
+  mineheadOpponents: number;
+  mineheadUpgrades: number;
+} {
+  const research = toList(data.Research);
+  return {
+    cells: asIndexedNumbers(research[0]).filter((value) => value > 0).length,
+    occurrences: asIndexedNumbers(research[2]).filter((value) => value > 0).length,
+    mineheadOpponents: asIndexedNumbers(research[7])[4] ?? 0,
+    mineheadUpgrades: sumLevels(research[8])
+  };
+}
+
+function parseLegendTalents(data: Record<string, unknown>): number {
+  return asIndexedNumbers(toList(data.Spelunk)[18]).filter((value) => value > 0).length;
 }
 
 function countPositive(record: Record<string, unknown>): number {
@@ -615,6 +663,9 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const sneaking = parseSneaking(data);
   const summoning = parseSummoning(data);
   const caverns = parseCaverns(data);
+  const cogs = parseCogs(data);
+  const compass = parseCompass(data);
+  const research = parseResearch(data);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -693,6 +744,7 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     farmPlots: farming.plots,
     farmMarketLevels: farming.marketLevels,
     farmLandRanks: farming.landRanks,
+    farmExoticLevels: farming.exoticLevels,
     sneakingJadeUpgrades: sneaking.jadeUpgrades,
     sneakingNinjaLevels: sneaking.ninjaLevels,
     sneakingPristineCharms: sneaking.charms,
@@ -703,6 +755,18 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     villagerLevels: caverns.villagers,
     cavernSchematics: caverns.schematics,
     coralUnlocked: parseCoral(data),
+    cogsPlaced: cogs.placed,
+    flagsComplete: cogs.flags,
+    grimoireLevels: sumLevels(data.Grimoire),
+    compassLevels: compass.levels,
+    compassAbominations: compass.abominations,
+    compassMedallions: compass.medallions,
+    tesseractLevels: sumLevels(data.Arcane),
+    researchCells: research.cells,
+    researchOccurrences: research.occurrences,
+    mineheadOpponents: research.mineheadOpponents,
+    mineheadUpgrades: research.mineheadUpgrades,
+    legendTalents: parseLegendTalents(data),
     source: bundle.source,
     raw: data
   };

@@ -45,6 +45,13 @@ import { farmingCropsAdvice } from './groups/farmingCrops';
 import { sneakingJadeAdvice } from './groups/sneakingJade';
 import { summoningWinsAdvice } from './groups/summoningWins';
 import { coralReefAdvice } from './groups/coralReef';
+import { cogsAdvice } from './groups/cogs';
+import { grimoireAdvice } from './groups/grimoire';
+import { compassAdvice } from './groups/compass';
+import { tesseractAdvice } from './groups/tesseract';
+import { researchAdvice } from './groups/research';
+import { mineheadAdvice } from './groups/minehead';
+import { legendTalentsAdvice } from './groups/legendTalents';
 import {
   breedingAdvice,
   constructionAdvice,
@@ -89,6 +96,7 @@ export function reviewPlugin() {
   registerAdvice(buildingsAdvice);
   registerAdvice(shrinesAdvice);
   registerAdvice(equinoxAdvice);
+  registerAdvice(cogsAdvice);
   registerAdvice(deathNoteAdvice);
   registerAdvice(prayersAdvice);
   registerAdvice(worshipTotemsAdvice);
@@ -117,8 +125,14 @@ export function reviewPlugin() {
   registerAdvice(sneakingJadeAdvice);
   registerAdvice(summoningAdvice);
   registerAdvice(summoningWinsAdvice);
+  registerAdvice(grimoireAdvice);
+  registerAdvice(compassAdvice);
+  registerAdvice(tesseractAdvice);
   registerAdvice(spelunkingAdvice);
   registerAdvice(coralReefAdvice);
+  registerAdvice(researchAdvice);
+  registerAdvice(mineheadAdvice);
+  registerAdvice(legendTalentsAdvice);
   registerAdvice(pinchyAdvice);
   registerPlugin({
     id: 'review',

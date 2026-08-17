@@ -29,7 +29,7 @@ export const farmingCropsAdvice: AdvicePlugin = {
     } else {
       items.push({
         title: `${account.farmCrops} crop types`,
-        detail: `${account.farmPlots} plots · market levels ${account.farmMarketLevels} · ${account.farmLandRanks} ranked.`,
+        detail: `${account.farmPlots} plots · market levels ${account.farmMarketLevels} · ${account.farmLandRanks} ranked · exotic ${account.farmExoticLevels}.`,
         severity: 'good',
         current: String(account.farmCrops)
       });
