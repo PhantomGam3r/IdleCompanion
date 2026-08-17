@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { getPlugins } from './core/plugins/registry';
 import { dashboardPlugin } from './plugins/dashboard';
+import { charactersPlugin } from './plugins/characters';
 import { importJsonPlugin } from './plugins/import-json';
 import { reviewPlugin } from './plugins/review';
 import { AccountProvider, useAccount } from './ui/AccountProvider';
@@ -9,6 +10,7 @@ import { AppShell } from './ui/layout/AppShell';
 import type { ComponentType } from 'react';
 
 dashboardPlugin();
+charactersPlugin();
 reviewPlugin();
 importJsonPlugin();
 

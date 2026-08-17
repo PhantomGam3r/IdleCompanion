@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAccount } from '../../ui/AccountProvider';
 import { SKILL_NAMES } from '../../core/parse/parseSave';
+import { runReview } from '../review/engine';
 
 function formatAgo(ms: number | null): string {
   if (!ms) return 'Unknown';
@@ -31,6 +32,9 @@ export function DashboardPage() {
     skill,
     level: Math.max(...account.characters.map((c) => c.skills[skill] ?? 0), 0)
   }));
+  const alerts = runReview(account)
+    .find((group) => group.id === 'pinchy')
+    ?.items.filter((item) => item.severity === 'warning') ?? [];
 
   return (
     <div className="page-stack">
@@ -45,13 +49,34 @@ export function DashboardPage() {
             {account.isStale ? ' · stale (over 24h)' : ''}
           </p>
         </div>
-        <Link className="button" to="/review">
-          Run AutoReview
-        </Link>
+        <div className="hero-actions">
+          <Link className="button ghost" to="/characters">
+            Compare characters
+          </Link>
+          <Link className="button" to="/review">
+            Run AutoReview
+          </Link>
+        </div>
       </header>
 
       {account.isStale ? (
         <p className="banner warning">This save is over a day old. Log into Idleon, then refresh here.</p>
+      ) : null}
+
+      {alerts.length > 0 ? (
+        <section className="panel">
+          <h2>Alerts</h2>
+          <ul className="advice-list">
+            {alerts.slice(0, 5).map((item) => (
+              <li key={item.title} className="advice-item warning">
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className="stat-grid">
@@ -70,9 +95,23 @@ export function DashboardPage() {
           <span className="muted">{account.stampsCollected} collected</span>
         </article>
         <article className="stat-card">
-          <span className="stat-label">Bubble levels</span>
+          <span className="stat-label">Bubbles / vials</span>
           <strong>{account.bubbleLevels}</strong>
-          <span className="muted">{account.bubbles.filter((b) => b.level > 0).length} unlocked</span>
+          <span className="muted">{account.vialsUnlocked} vials</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Bribes</span>
+          <strong>{account.bribesPurchased}</strong>
+          <span className="muted">{account.bribes.filter((b) => b.status === 0).length} available</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Statues</span>
+          <strong>{account.statueLevels}</strong>
+          <span className="muted">{account.statues.filter((s) => s.level > 0).length} deposited</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Cards</span>
+          <strong>{account.cardsFound}</strong>
         </article>
         <article className="stat-card">
           <span className="stat-label">Source</span>

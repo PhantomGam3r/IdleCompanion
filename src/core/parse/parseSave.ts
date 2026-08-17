@@ -1,5 +1,16 @@
-import { asArray, asNumber, asRecord, tryToParse } from './helpers';
-import type { BubbleColor, Character, ParsedAccount, StampCategory, StampSummary } from './types';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, tryToParse } from './helpers';
+import { BRIBE_SETS, FORGE_UPGRADES, STATUE_NAMES, STATUE_TYPES } from './catalogs';
+import type {
+  BribeStatus,
+  BribeSummary,
+  BubbleColor,
+  Character,
+  ForgeSummary,
+  ParsedAccount,
+  StampCategory,
+  StampSummary,
+  StatueSummary
+} from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
 
 export const CLASS_NAMES = [
@@ -95,13 +106,13 @@ function namesFromCog(data: Record<string, unknown>, count: number): string[] {
 }
 
 function parseCharacter(data: Record<string, unknown>, index: number, name: string): Character {
-  const levels = asArray<unknown>(data[`Lv0_${index}`]).map((v) => asNumber(v));
+  const levels = asIndexedNumbers(data[`Lv0_${index}`]);
   const skills: Record<string, number> = {};
   SKILL_NAMES.forEach((skill, skillIndex) => {
     skills[skill] = levels[skillIndex] ?? 0;
   });
   const classId = asNumber(data[`CharacterClass_${index}`]);
-  const statsArr = asArray<unknown>(data[`PVStatList_${index}`]).map((v) => asNumber(v));
+  const statsArr = asIndexedNumbers(data[`PVStatList_${index}`]);
   return {
     index,
     name,
@@ -120,10 +131,8 @@ function parseCharacter(data: Record<string, unknown>, index: number, name: stri
 }
 
 function parseStamps(data: Record<string, unknown>): StampSummary[] {
-  const levels = asArray<unknown>(data.StampLv ?? data.StampLevel).map((row) => asArray<unknown>(row).map((v) => asNumber(v)));
-  const maxLevels = asArray<unknown>(data.StampLvM ?? data.StampLevelMAX).map((row) =>
-    asArray<unknown>(row).map((v) => asNumber(v))
-  );
+  const levels = asIndexedRows(data.StampLv ?? data.StampLevel);
+  const maxLevels = asIndexedRows(data.StampLvM ?? data.StampLevelMAX);
   const stamps: StampSummary[] = [];
   STAMP_CATEGORIES.forEach((category, categoryIndex) => {
     const row = levels[categoryIndex] ?? [];
@@ -146,14 +155,70 @@ function parseStamps(data: Record<string, unknown>): StampSummary[] {
 
 function parseBubbles(data: Record<string, unknown>): ParsedAccount['bubbles'] {
   const cauldron = asArray<unknown>(data.CauldronInfo);
+  const fromRows = asIndexedRows(data.CauldronInfo);
+  const rows = cauldron.length ? cauldron : fromRows;
   const bubbles: ParsedAccount['bubbles'] = [];
   BUBBLE_COLORS.forEach((color, colorIndex) => {
-    const row = asArray<unknown>(cauldron[colorIndex]).map((v) => asNumber(v));
+    const row = asIndexedNumbers(rows[colorIndex]);
     row.forEach((level, index) => {
       bubbles.push({ color, index, level });
     });
   });
   return bubbles;
+}
+
+function parseVials(data: Record<string, unknown>): number[] {
+  const cauldron = asArray<unknown>(data.CauldronInfo);
+  return asIndexedNumbers(cauldron[4] ?? asIndexedRows(data.CauldronInfo)[4]);
+}
+
+function parseBribes(data: Record<string, unknown>): BribeSummary[] {
+  const raw = asIndexedNumbers(data.BribeStatus);
+  const bribes: BribeSummary[] = [];
+  let index = 0;
+  for (const set of BRIBE_SETS) {
+    for (const name of set.names) {
+      const value = raw[index] ?? -1;
+      const status: BribeStatus = value >= 1 ? 1 : value === 0 ? 0 : -1;
+      bribes.push({ set: set.world, name, status });
+      index += 1;
+    }
+  }
+  return bribes;
+}
+
+function parseStatues(data: Record<string, unknown>, characterCount: number): StatueSummary[] {
+  const levels = Array.from({ length: STATUE_NAMES.length }, () => 0);
+  const types = Array.from({ length: STATUE_NAMES.length }, () => 0);
+  for (let charIndex = 0; charIndex < characterCount; charIndex += 1) {
+    const rows = asArray<unknown>(data[`StatueLevels_${charIndex}`]);
+    rows.forEach((row, statueIndex) => {
+      const pair = asIndexedNumbers(row);
+      const level = pair[0] ?? 0;
+      const type = pair[1] ?? 0;
+      if (level > (levels[statueIndex] ?? 0)) levels[statueIndex] = level;
+      if (type > (types[statueIndex] ?? 0)) types[statueIndex] = type;
+    });
+  }
+  return STATUE_NAMES.map((name, index) => ({
+    index,
+    name,
+    level: levels[index] ?? 0,
+    type: STATUE_TYPES[types[index] ?? 0] ?? 'Normal'
+  }));
+}
+
+function parseForge(data: Record<string, unknown>): ForgeSummary[] {
+  const levels = asIndexedNumbers(data.ForgeLV);
+  return FORGE_UPGRADES.map((upgrade, index) => ({
+    name: upgrade.name,
+    purchased: levels[index] ?? 0,
+    max: upgrade.max
+  }));
+}
+
+function countPositive(record: Record<string, unknown>): number {
+  return Object.entries(record).filter(([key, value]) => key !== 'length' && asNumber(value) > 0).length;
 }
 
 function highestWorld(characters: Character[]): number {
@@ -201,6 +266,13 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
 
   const stamps = parseStamps(data);
   const bubbles = parseBubbles(data);
+  const vials = parseVials(data);
+  const bribes = parseBribes(data);
+  const statues = parseStatues(data, Math.max(count, characters.length));
+  const forge = parseForge(data);
+  const gemShop = asIndexedNumbers(data.GemItemsPurchased);
+  const cards = asRecord(data.Cards0);
+  const achievements = asIndexedNumbers(data.AchieveReg);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -215,6 +287,17 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     stampsCollected: stamps.filter((stamp) => stamp.level > 0).length,
     bubbles,
     bubbleLevels: bubbles.reduce((sum, bubble) => sum + bubble.level, 0),
+    vials,
+    vialLevels: vials.reduce((sum, level) => sum + level, 0),
+    vialsUnlocked: vials.filter((level) => level > 0).length,
+    bribes,
+    bribesPurchased: bribes.filter((bribe) => bribe.status === 1).length,
+    statues,
+    statueLevels: statues.reduce((sum, statue) => sum + statue.level, 0),
+    forge,
+    gemShopPurchases: gemShop.filter((owned) => owned > 0).length,
+    cardsFound: countPositive(cards),
+    achievements: achievements.filter((value) => value > 0).length,
     source: bundle.source,
     raw: data
   };

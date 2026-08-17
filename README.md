@@ -1,18 +1,19 @@
 # IdleCompanion
 
-IdleCompanion is a static GitHub Pages app that combines an [Idleon Toolbox](https://github.com/Morta1/IdleonToolbox)-style live save dashboard with [IdleOn AutoReview](https://github.com/TwoSpookyBoos/IdleOnAutoReviewBot)-style advice.
+Live site: https://phantomgam3r.github.io/IdleCompanion/
 
 Sign in with the **same Google account** you use in [Legends of Idleon](https://www.legendsofidleon.com). The app reads your cloudsave from Lava's `idlemmo` Firebase project and never stores that save on a server of its own.
 
 Not affiliated with Lava / Legends of Idleon.
 
-## Features (v1)
+## Features
 
 - **Google game login** via OAuth device flow (works on `*.github.io`)
 - **Email / password** login with the same Idleon credentials
 - **Live cloudsave** from Firestore `_data/{uid}` plus character names from Realtime DB
-- **Dashboard** — characters, combat/skill peaks, stamps, bubbles
-- **AutoReview** — account / stamps / alchemy / bubble advice, grouped by world
+- **Dashboard** — characters, alerts, stamps, bubbles, bribes, statues, cards
+- **Characters** — skill matrix across the roster
+- **AutoReview** — Pinchy-style “do this first” plus General / W1–W7 groups (stamps, bribes, statues, forge, alchemy, bubbles, vials, later-world skills)
 - **JSON import** for Toolbox / Efficiency / raw game saves
 - **Plugin registry** so new pages and advice groups can be added without touching the shell
 
