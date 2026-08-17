@@ -228,4 +228,20 @@ describe('parseSave', () => {
     expect(account.bubbleLevels).toBe(14);
     expect(account.vialLevels).toBe(7);
   });
+
+  it('rounds post office box totals off float save values', () => {
+    const account = parseSave(
+      fromImportedJson({
+        charNames: ['Testor'],
+        data: {
+          CharacterClass_0: 1,
+          Lv0_0: [20],
+          CYDeliveryBoxComplete: 17804.600000000006,
+          CYDeliveryBoxStreak: 0,
+          CYDeliveryBoxMisc: 0
+        }
+      })
+    );
+    expect(account.postOfficeBoxesEarned).toBe(17805);
+  });
 });
