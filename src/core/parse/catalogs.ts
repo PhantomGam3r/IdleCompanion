@@ -7,6 +7,9 @@ export const BRIBE_SETS: { world: string; names: string[] }[] = [
   { world: 'W6', names: ['The Art of the Grail', 'Artifact Pilfering', 'Forge Cap Smuggling', 'Gold from Lead', 'Nugget Fabrication', 'Divine PTS Miscounting', 'Loot Table Tampering', 'The Art of the Flail'] }
 ];
 
+/** Placeholder expansion bribes that the vendor will not sell yet. */
+export const UNPURCHASABLE_BRIBES = new Set(['The Art of the Flail']);
+
 export const STATUE_NAMES = [
   'Power',
   'Speed',

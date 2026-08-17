@@ -15,6 +15,7 @@ import {
   SALT_LICK_UPGRADES,
   STATUE_NAMES,
   STATUE_TYPES,
+  UNPURCHASABLE_BRIBES,
   WORSHIP_TOTEMS
 } from './catalogs';
 import type {
@@ -205,7 +206,8 @@ function parseBribes(data: Record<string, unknown>): BribeSummary[] {
   for (const set of BRIBE_SETS) {
     for (const name of set.names) {
       const value = raw[index] ?? -1;
-      const status: BribeStatus = value >= 1 ? 1 : value === 0 ? 0 : -1;
+      const purchased = value >= 1;
+      const status: BribeStatus = purchased ? 1 : UNPURCHASABLE_BRIBES.has(name) || value !== 0 ? -1 : 0;
       bribes.push({ set: set.world, name, status });
       index += 1;
     }
