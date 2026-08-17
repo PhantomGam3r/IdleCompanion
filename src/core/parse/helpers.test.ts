@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber, formatCount, numberToLetter } from './helpers';
+import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber, formatCount, klaToKills, numberToLetter } from './helpers';
 
 describe('asIndexedNumbers', () => {
   it('reads JSON arrays', () => {
@@ -52,5 +52,13 @@ describe('formatCount', () => {
     expect(formatCount(17804.600000000006)).toBe('17,805');
     expect(formatCount(80)).toBe('80');
     expect(formatCount(Number.NaN)).toBe('0');
+  });
+});
+
+describe('klaToKills', () => {
+  it('turns portal remaining into farmed kill counts', () => {
+    expect(klaToKills(11 - 2_000_000_000, 11)).toBe(2_000_000_000);
+    expect(klaToKills(0, 11)).toBe(0);
+    expect(klaToKills(5, 11)).toBe(6);
   });
 });

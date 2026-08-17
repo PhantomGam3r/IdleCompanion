@@ -1,6 +1,9 @@
 import type { AdvicePlugin } from '../../../core/plugins/registry';
 import type { AdviceItem } from '../../../core/parse/types';
+import { DEATH_NOTE_SKULLS } from '../../../core/parse/catalogs';
 import { notReachedGroup, skillPeak } from './worldSkill';
+
+const COPPER_RANK = DEATH_NOTE_SKULLS.findIndex((skull) => skull.name === 'Copper Skull');
 
 export const deathNoteAdvice: AdvicePlugin = {
   id: 'death-note',
@@ -37,20 +40,22 @@ export const deathNoteAdvice: AdvicePlugin = {
       });
     } else {
       items.push({
-        title: `${note.mapsWithKills} maps with kills`,
-        detail: `Lowest skull on a farmed map: ${note.lowestSkull}. Gold skulls: ${note.goldSkulls}. Lava skulls: ${note.lavaSkulls}.`,
+        title: `${note.mapsWithKills} Death Note maps with kills`,
+        detail: `Lowest skull on a farmed regular map: ${note.lowestSkull}. Gold skulls: ${note.goldSkulls}. Lava skulls: ${note.lavaSkulls}.`,
         severity: note.goldSkulls < 8 ? 'info' : 'good',
         current: note.lowestSkull
       });
     }
 
-    const weakWorlds = note.lowestByWorld.filter(
-      (row) => row.skull === 'None' || row.skull === 'Normal Skull' || row.skull === 'Copper Skull'
-    );
+    const weakWorlds = note.lowestByWorld.filter((row) => {
+      const rank = DEATH_NOTE_SKULLS.findIndex((skull) => skull.name === row.skull);
+      return rank >= 0 && rank < COPPER_RANK;
+    });
     if (weakWorlds.length > 0 && deathNoteBuilding > 0) {
+      const lowest = weakWorlds.map((row) => `W${row.world} ${row.skull.replace(' Skull', '')}`).join(' · ');
       items.push({
         title: `Low skulls in ${weakWorlds.map((row) => `W${row.world}`).join(', ')}`,
-        detail: 'Push every regular map in a world to at least Copper (100k) before you deep-farm one map. Multikill is per-world.',
+        detail: `Regular Death Note maps only — not colosseums, bosses, or skill maps. Lowest: ${lowest}. Get every map in a world to Copper (100k) before deep-farming one; multikill is per-world.`,
         severity: 'warning'
       });
     }
@@ -64,3 +69,4 @@ export const deathNoteAdvice: AdvicePlugin = {
     };
   }
 };
+
