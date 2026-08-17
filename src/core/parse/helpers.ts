@@ -100,3 +100,11 @@ export function toList(value: unknown): unknown[] {
   });
   return out;
 }
+
+export function countIndexedKeys(value: unknown): number {
+  let count = 0;
+  forIndexed(value, () => {
+    count += 1;
+  });
+  return count;
+}

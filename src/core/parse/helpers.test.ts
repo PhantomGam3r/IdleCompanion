@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asIndexedNumbers, asIndexedRows, firstNumber } from './helpers';
+import { asIndexedNumbers, asIndexedRows, countIndexedKeys, firstNumber } from './helpers';
 
 describe('asIndexedNumbers', () => {
   it('reads JSON arrays', () => {
@@ -30,5 +30,11 @@ describe('firstNumber', () => {
     expect(firstNumber(42)).toBe(42);
     expect(firstNumber([9001, 2])).toBe(9001);
     expect(firstNumber({ 0: 25000, 1: 3 })).toBe(25000);
+  });
+});
+
+describe('countIndexedKeys', () => {
+  it('counts numeric keys including zeros', () => {
+    expect(countIndexedKeys({ 0: 10, 1: 0, 4: 3, length: 5 })).toBe(3);
   });
 });

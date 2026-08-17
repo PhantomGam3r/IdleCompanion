@@ -176,6 +176,15 @@ export const DEATH_NOTE_SKULLS = [
   { name: 'Eclipse Skull', kills: 1_000_000_000 }
 ];
 
+export const ISLAND_CODES: { name: string; code: string }[] = [
+  { name: 'Trash Island', code: '_' },
+  { name: 'Rando Island', code: 'a' },
+  { name: 'Crystal Island', code: 'b' },
+  { name: 'Seasalt Island', code: 'c' },
+  { name: 'Shimmer Island', code: 'd' },
+  { name: 'Fractal Island', code: 'e' }
+];
+
 export const ATOM_NAMES = [
   'Hydrogen',
   'Helium',

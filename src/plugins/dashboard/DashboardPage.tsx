@@ -149,6 +149,26 @@ export function DashboardPage() {
           <span className="muted">{account.vaultLevels} vault lv</span>
         </article>
         <article className="stat-card">
+          <span className="stat-label">Islands</span>
+          <strong>{account.islandsUnlocked}</strong>
+          <span className="muted">{account.obolsOwned} obols</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Farming</span>
+          <strong>{account.farmCrops}</strong>
+          <span className="muted">{account.farmPlots} plots</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Sneaking / summon</span>
+          <strong>{account.sneakingJadeUpgrades}</strong>
+          <span className="muted">{account.summonWins} wins</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Caverns</span>
+          <strong>{account.cavernsUnlocked}</strong>
+          <span className="muted">{account.coralUnlocked} corals</span>
+        </article>
+        <article className="stat-card">
           <span className="stat-label">Source</span>
           <strong>{account.source === 'cloud' ? 'Live cloud' : 'JSON import'}</strong>
           <span className="muted">{bundle?.source}</span>

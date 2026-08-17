@@ -45,14 +45,45 @@ const fixture = {
     UpgVault: [3, 0, 5],
     Print: [0, 0, 0, 0, 0, 'Copper', 10, 'Iron', 4, 'Blank', 0],
     Atoms: [1, 0, 2],
-    OptLacc: Object.assign([], { 55: 22, 85: 4, 89: 12 }),
+    OptLacc: Object.assign([], {
+      55: 22,
+      85: 4,
+      89: 12,
+      112: 20,
+      161: 50,
+      162: 10,
+      169: '_dcabe',
+      258: 2,
+      262: 5,
+      265: 1,
+      319: 4
+    }),
     Breeding: [[], [3, 2, 1]],
     Lab: Array.from({ length: 16 }, (_, index) => (index === 14 ? [1, 0, 1] : index === 15 ? [2, 0] : [])),
     Rift: [7],
     Sailing: [[-1, -1, 0], [], [2, 1], [1, 2, 0, 1]],
     Divinity: Array.from({ length: 26 }, (_, index) => (index === 25 ? 4 : 0)),
     Gaming: [1500, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 'AB1'],
-    Cards1: ['Copper', 'Iron', 'Blank']
+    Cards1: ['Copper', 'Iron', 'Blank'],
+    ObolEqO1: ['ObolBronze0', 'Blank', 'ObolSilver0'],
+    WeeklyBoss: { d_0: -1, d_1: -1, d_2: 0 },
+    Dream: [0, 3, 2],
+    Shrine: [
+      [0, 0, 0, 5, 10, 0],
+      [0, 0, 0, 0, 0, 0],
+      [1, 0, 0, 3, 2, 0]
+    ],
+    FarmUpg: [0, 12, 3, 1],
+    FarmCrop: { 0: 10, 1: 0, 4: 3 },
+    FarmRank: [[2, 1, 0], 0, [1]],
+    Ninja: Object.assign([], {
+      102: [0, 500, 0, 0, 0, 0, 0, 0, 0, 'ab'],
+      103: [3, 2, 1],
+      107: [1, 0, 1]
+    }),
+    Summon: [[2, 0, 4], ['Pet1', 'Pet2'], [10, 0, 5]],
+    Holes: Object.assign([], { 1: [5, 2, 1], 7: [1, 1, 0], 13: [1, 1, 1, 0] }),
+    Spelunk: Object.assign([], { 12: [1, 1, 0], 13: [2, 1, 0] })
   }
 };
 
@@ -108,6 +139,21 @@ describe('parseSave', () => {
     expect(account.divinityGods).toBe(4);
     expect(account.gamingSuperbits).toBe(3);
     expect(account.slabItems).toBe(2);
+    expect(account.owlDiscovered).toBe(true);
+    expect(account.owlMegaFeathers).toBe(5);
+    expect(account.islandsUnlocked).toBe(6);
+    expect(account.killroyFights).toBe(20);
+    expect(account.obolsOwned).toBe(2);
+    expect(account.equinoxDreams).toBe(2);
+    expect(account.equinoxBonusLevels).toBe(5);
+    expect(account.shrinesUnlocked).toBe(2);
+    expect(account.farmCrops).toBe(3);
+    expect(account.farmPlots).toBe(4);
+    expect(account.sneakingJadeUpgrades).toBe(2);
+    expect(account.summonWins).toBe(2);
+    expect(account.summonEndless).toBe(4);
+    expect(account.cavernsUnlocked).toBe(5);
+    expect(account.coralUnlocked).toBe(2);
     expect(account.source).toBe('json');
   });
 
