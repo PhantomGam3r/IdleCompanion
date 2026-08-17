@@ -1,8 +1,9 @@
-import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, firstNumber, forIndexed, tryToParse, toList } from './helpers';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, tryToParse, toList } from './helpers';
 import {
   ATOM_NAMES,
   BRIBE_SETS,
   CONSTRUCTION_BUILDINGS,
+  ISLAND_CODES,
   DEATH_NOTE_SKULLS,
   FORGE_UPGRADES,
   POST_OFFICE_BOXES,
@@ -356,8 +357,21 @@ function parsePostOfficeBoxes(data: Record<string, unknown>): number {
   );
 }
 
+function optRaw(data: Record<string, unknown>, index: number): unknown {
+  const list = toList(data.OptLacc);
+  if (index < list.length && list[index] !== undefined) return list[index];
+  return asRecord(data.OptLacc)[String(index)];
+}
+
 function optNumber(data: Record<string, unknown>, index: number): number {
-  return asIndexedNumbers(data.OptLacc)[index] ?? 0;
+  return asNumber(optRaw(data, index));
+}
+
+function optTruthy(data: Record<string, unknown>, index: number): boolean {
+  const value = optRaw(data, index);
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value !== '' && value !== '0';
+  return asNumber(value) > 0;
 }
 
 function parsePrinterSamples(data: Record<string, unknown>): number {
@@ -416,6 +430,116 @@ function parseGaming(data: Record<string, unknown>): { bits: number; superbits: 
 
 function parseSlab(data: Record<string, unknown>): number {
   return toList(data.Cards1).filter((item) => typeof item === 'string' && item && item !== 'Blank').length;
+}
+
+function parseIslands(data: Record<string, unknown>): number {
+  const codes = String(optRaw(data, 169) ?? '');
+  if (!codes || codes === '0') return 0;
+  return ISLAND_CODES.filter((island) => codes.includes(island.code)).length;
+}
+
+const IGNORED_OBOLS = new Set(['', 'Blank', 'Locked', 'ObolLocked', 'LockedObol', 'None']);
+
+function parseObols(data: Record<string, unknown>): number {
+  const names: string[] = [];
+  const visit = (value: unknown) => {
+    if (typeof value === 'string') {
+      if (!IGNORED_OBOLS.has(value)) names.push(value);
+      return;
+    }
+    const parsed = tryToParse(value);
+    if (Array.isArray(parsed)) {
+      parsed.forEach(visit);
+      return;
+    }
+    if (parsed && typeof parsed === 'object') {
+      Object.values(parsed as Record<string, unknown>).forEach(visit);
+    }
+  };
+  visit(data.ObolEqO1);
+  visit(data.ObolEqO2);
+  visit(data.ObolInvOr);
+  for (let slot = 0; slot < 10; slot += 1) visit(data[`ObolEqO0_${slot}`]);
+  return names.length;
+}
+
+function parseEquinoxDreams(data: Record<string, unknown>): number {
+  const weekly = asRecord(data.WeeklyBoss);
+  return Object.entries(weekly).filter(
+    ([key, value]) => /^d_\d+$/.test(key) && asNumber(value) === -1
+  ).length;
+}
+
+function parseShrines(data: Record<string, unknown>): { unlocked: number; levels: number } {
+  const rows = toList(data.Shrine).map((row) => asIndexedNumbers(row));
+  const levels = rows.map((row) => row[3] ?? 0);
+  return {
+    unlocked: levels.filter((level) => level > 0).length,
+    levels: levels.reduce((sum, level) => sum + Math.max(0, level), 0)
+  };
+}
+
+function parseFarming(data: Record<string, unknown>): {
+  crops: number;
+  plots: number;
+  marketLevels: number;
+  landRanks: number;
+} {
+  const upgrades = asIndexedNumbers(data.FarmUpg);
+  const crops = countIndexedKeys(data.FarmCrop);
+  const started = upgrades.length > 0 || crops > 0;
+  const market = upgrades.slice(2, 20);
+  const ranks = asIndexedNumbers(toList(data.FarmRank)[0]);
+  return {
+    crops,
+    plots: started ? 1 + (upgrades[2] ?? 0) : 0,
+    marketLevels: market.reduce((sum, level) => sum + Math.max(0, level), 0),
+    landRanks: ranks.filter((level) => level > 0).length
+  };
+}
+
+function parseSneaking(data: Record<string, unknown>): {
+  jadeUpgrades: number;
+  ninjaLevels: number;
+  charms: number;
+} {
+  const ninja = toList(data.Ninja);
+  const extra = toList(ninja[102]);
+  const unlocks = extra[9];
+  const jadeUpgrades =
+    typeof unlocks === 'string' ? new Set(unlocks.replace(/[^A-Za-z]/g, '').split('').filter(Boolean)).size : 0;
+  return {
+    jadeUpgrades,
+    ninjaLevels: asIndexedNumbers(ninja[103]).reduce((sum, level) => sum + Math.max(0, level), 0),
+    charms: asIndexedNumbers(ninja[107]).filter((value) => value > 0).length
+  };
+}
+
+function parseSummoning(data: Record<string, unknown>): { wins: number; upgrades: number } {
+  const summon = toList(data.Summon);
+  const wins = toList(summon[1]).filter((id) => typeof id === 'string' && id && id !== 'Blank').length;
+  return {
+    wins,
+    upgrades: asIndexedNumbers(summon[0]).reduce((sum, level) => sum + Math.max(0, level), 0)
+  };
+}
+
+function parseCaverns(data: Record<string, unknown>): {
+  unlocked: number;
+  villagers: number;
+  schematics: number;
+} {
+  const holes = toList(data.Holes);
+  const villagers = asIndexedNumbers(holes[1]);
+  return {
+    unlocked: villagers[0] ?? 0,
+    villagers: villagers.reduce((sum, level) => sum + Math.max(0, level), 0),
+    schematics: asIndexedNumbers(holes[13]).filter((value) => value > 0).length
+  };
+}
+
+function parseCoral(data: Record<string, unknown>): number {
+  return asIndexedNumbers(toList(data.Spelunk)[12]).filter((value) => value > 0).length;
 }
 
 function countPositive(record: Record<string, unknown>): number {
@@ -486,6 +610,11 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const sailing = parseSailing(data);
   const gaming = parseGaming(data);
   const atoms = namedLevels(ATOM_NAMES, data.Atoms);
+  const shrines = parseShrines(data);
+  const farming = parseFarming(data);
+  const sneaking = parseSneaking(data);
+  const summoning = parseSummoning(data);
+  const caverns = parseCaverns(data);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -549,6 +678,31 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     gamingBits: gaming.bits,
     gamingSuperbits: gaming.superbits,
     slabItems: parseSlab(data),
+    owlDiscovered: optTruthy(data, 265),
+    owlMegaFeathers: optNumber(data, 262),
+    owlRestarts: optNumber(data, 258),
+    islandsUnlocked: parseIslands(data),
+    islandTrash: optNumber(data, 161),
+    killroyFights: optNumber(data, 112),
+    obolsOwned: parseObols(data),
+    equinoxDreams: parseEquinoxDreams(data),
+    equinoxBonusLevels: asIndexedNumbers(data.Dream).reduce((sum, level) => sum + Math.max(0, level), 0),
+    shrinesUnlocked: shrines.unlocked,
+    shrineLevels: shrines.levels,
+    farmCrops: farming.crops,
+    farmPlots: farming.plots,
+    farmMarketLevels: farming.marketLevels,
+    farmLandRanks: farming.landRanks,
+    sneakingJadeUpgrades: sneaking.jadeUpgrades,
+    sneakingNinjaLevels: sneaking.ninjaLevels,
+    sneakingPristineCharms: sneaking.charms,
+    summonWins: summoning.wins,
+    summonUpgradeLevels: summoning.upgrades,
+    summonEndless: optNumber(data, 319),
+    cavernsUnlocked: caverns.unlocked,
+    villagerLevels: caverns.villagers,
+    cavernSchematics: caverns.schematics,
+    coralUnlocked: parseCoral(data),
     source: bundle.source,
     raw: data
   };

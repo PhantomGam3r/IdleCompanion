@@ -12,13 +12,19 @@ import { statuesAdvice } from './groups/statues';
 import { forgeAdvice } from './groups/forge';
 import { starSignsAdvice } from './groups/starSigns';
 import { vaultAdvice } from './groups/vault';
+import { owlAdvice } from './groups/owl';
 import { alchemyAdvice } from './groups/alchemy';
 import { bubblesAdvice } from './groups/bubbles';
 import { vialsAdvice } from './groups/vials';
 import { postOfficeAdvice } from './groups/postOffice';
 import { arcadeAdvice } from './groups/arcade';
 import { sigilsAdvice } from './groups/sigils';
+import { islandsAdvice } from './groups/islands';
+import { killroyAdvice } from './groups/killroy';
+import { obolsAdvice } from './groups/obols';
 import { buildingsAdvice } from './groups/buildings';
+import { shrinesAdvice } from './groups/shrines';
+import { equinoxAdvice } from './groups/equinox';
 import { deathNoteAdvice } from './groups/deathNote';
 import { prayersAdvice } from './groups/prayers';
 import { worshipTotemsAdvice } from './groups/worshipTotems';
@@ -34,6 +40,11 @@ import { sailingLootAdvice } from './groups/sailingLoot';
 import { divinityGodsAdvice } from './groups/divinityGods';
 import { gamingAdviceGroup } from './groups/gamingBits';
 import { slabAdvice } from './groups/slab';
+import { cavernsAdvice } from './groups/caverns';
+import { farmingCropsAdvice } from './groups/farmingCrops';
+import { sneakingJadeAdvice } from './groups/sneakingJade';
+import { summoningWinsAdvice } from './groups/summoningWins';
+import { coralReefAdvice } from './groups/coralReef';
 import {
   breedingAdvice,
   constructionAdvice,
@@ -62,16 +73,22 @@ export function reviewPlugin() {
   registerAdvice(forgeAdvice);
   registerAdvice(starSignsAdvice);
   registerAdvice(vaultAdvice);
+  registerAdvice(owlAdvice);
   registerAdvice(alchemyAdvice);
   registerAdvice(bubblesAdvice);
   registerAdvice(vialsAdvice);
   registerAdvice(postOfficeAdvice);
   registerAdvice(arcadeAdvice);
   registerAdvice(sigilsAdvice);
+  registerAdvice(islandsAdvice);
+  registerAdvice(killroyAdvice);
+  registerAdvice(obolsAdvice);
   registerAdvice(constructionAdvice);
   registerAdvice(trappingAdvice);
   registerAdvice(worshipAdvice);
   registerAdvice(buildingsAdvice);
+  registerAdvice(shrinesAdvice);
+  registerAdvice(equinoxAdvice);
   registerAdvice(deathNoteAdvice);
   registerAdvice(prayersAdvice);
   registerAdvice(worshipTotemsAdvice);
@@ -93,10 +110,15 @@ export function reviewPlugin() {
   registerAdvice(gamingAdvice);
   registerAdvice(gamingAdviceGroup);
   registerAdvice(slabAdvice);
+  registerAdvice(cavernsAdvice);
   registerAdvice(farmingAdvice);
+  registerAdvice(farmingCropsAdvice);
   registerAdvice(sneakingAdvice);
+  registerAdvice(sneakingJadeAdvice);
   registerAdvice(summoningAdvice);
+  registerAdvice(summoningWinsAdvice);
   registerAdvice(spelunkingAdvice);
+  registerAdvice(coralReefAdvice);
   registerAdvice(pinchyAdvice);
   registerPlugin({
     id: 'review',
