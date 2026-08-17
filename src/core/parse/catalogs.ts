@@ -310,6 +310,9 @@ export const ATOM_NAMES = [
   'Aluminium'
 ];
 
+/** Base 20 + Isotope Discovery 10 + Compass Atomic Potential 20 + event shop 20. */
+export const ATOM_LEVEL_CAP = 70;
+
 /** Indices 33–34 on each cauldron are unreleased filler “BUBBLE” slots. */
 export const REAL_BUBBLES_PER_CAULDRON = 33;
 

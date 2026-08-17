@@ -1,5 +1,6 @@
 import type { AdvicePlugin } from '../../../core/plugins/registry';
 import type { AdviceItem } from '../../../core/parse/types';
+import { ATOM_LEVEL_CAP } from '../../../core/parse/catalogs';
 import { notReachedGroup, skillPeak } from './worldSkill';
 
 export const atomsAdvice: AdvicePlugin = {
@@ -35,10 +36,16 @@ export const atomsAdvice: AdvicePlugin = {
         severity: 'warning'
       });
     } else if (account.atomsUnlocked > 0) {
-      const named = account.atoms.filter((atom) => atom.level > 0).slice(0, 4);
+      const notMaxed = account.atoms.filter((atom) => {
+        const max = atom.max ?? ATOM_LEVEL_CAP;
+        return atom.level > 0 && atom.level < max;
+      });
       items.push({
         title: `${account.atomsUnlocked} atoms unlocked`,
-        detail: named.map((atom) => `${atom.name} ${atom.level}`).join(' · '),
+        detail:
+          notMaxed.length > 0
+            ? `Not maxed: ${notMaxed.map((atom) => `${atom.name} ${atom.level}/${atom.max ?? ATOM_LEVEL_CAP}`).join(' · ')}.`
+            : `All unlocked atoms are at max level (${ATOM_LEVEL_CAP}).`,
         severity: account.atomsUnlocked < 4 ? 'info' : 'good',
         current: String(account.atomsUnlocked)
       });
