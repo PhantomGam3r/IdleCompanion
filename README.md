@@ -11,9 +11,9 @@ Not affiliated with Lava / Legends of Idleon.
 - **Google game login** via OAuth device flow (works on `*.github.io`)
 - **Email / password** login with the same Idleon credentials
 - **Live cloudsave** from Firestore `_data/{uid}` plus character names from Realtime DB
-- **Dashboard** — characters, alerts, stamps, bubbles, bribes, statues, cards
+- **Dashboard** — characters, alerts, stamps, bubbles, bribes, statues, cards, post office, death note
 - **Characters** — skill matrix across the roster
-- **AutoReview** — Pinchy-style “do this first” plus General / W1–W7 groups (stamps, bribes, statues, forge, alchemy, bubbles, vials, later-world skills)
+- **AutoReview** — Pinchy-style “do this first” plus General / W1–W7 groups (stamps, bribes, statues, forge, alchemy, bubbles, vials, post office, arcade, sigils, construction, death note, prayers, salt lick, refinery, meals, later-world skills)
 - **JSON import** for Toolbox / Efficiency / raw game saves
 - **Plugin registry** so new pages and advice groups can be added without touching the shell
 

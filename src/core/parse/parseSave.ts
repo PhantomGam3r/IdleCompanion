@@ -1,11 +1,25 @@
-import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, tryToParse } from './helpers';
-import { BRIBE_SETS, FORGE_UPGRADES, STATUE_NAMES, STATUE_TYPES } from './catalogs';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, firstNumber, forIndexed, tryToParse } from './helpers';
+import {
+  BRIBE_SETS,
+  CONSTRUCTION_BUILDINGS,
+  DEATH_NOTE_SKULLS,
+  FORGE_UPGRADES,
+  POST_OFFICE_BOXES,
+  PRAYER_NAMES,
+  REFINERY_SALTS,
+  SALT_LICK_UPGRADES,
+  STATUE_NAMES,
+  STATUE_TYPES,
+  WORSHIP_TOTEMS
+} from './catalogs';
 import type {
   BribeStatus,
   BribeSummary,
   BubbleColor,
   Character,
+  DeathNoteSummary,
   ForgeSummary,
+  NamedLevel,
   ParsedAccount,
   StampCategory,
   StampSummary,
@@ -113,6 +127,11 @@ function parseCharacter(data: Record<string, unknown>, index: number, name: stri
   });
   const classId = asNumber(data[`CharacterClass_${index}`]);
   const statsArr = asIndexedNumbers(data[`PVStatList_${index}`]);
+  const poLevels = asIndexedNumbers(data[`POu_${index}`]);
+  const postOfficeBoxes = POST_OFFICE_BOXES.map((boxName, boxIndex) => ({
+    name: boxName,
+    level: poLevels[boxIndex] ?? 0
+  }));
   return {
     index,
     name,
@@ -126,7 +145,9 @@ function parseCharacter(data: Record<string, unknown>, index: number, name: stri
       agi: statsArr[1] ?? 0,
       wis: statsArr[2] ?? 0,
       luk: statsArr[3] ?? 0
-    }
+    },
+    postOfficeInvested: poLevels.reduce((sum, level) => sum + level, 0),
+    postOfficeBoxes
   };
 }
 
@@ -217,6 +238,123 @@ function parseForge(data: Record<string, unknown>): ForgeSummary[] {
   }));
 }
 
+function namedLevels(names: string[], raw: unknown, maxByIndex?: number[]): NamedLevel[] {
+  const levels = asIndexedNumbers(raw);
+  return names.map((name, index) => ({
+    name,
+    level: levels[index] ?? 0,
+    max: maxByIndex?.[index]
+  }));
+}
+
+function parseBuildings(data: Record<string, unknown>): NamedLevel[] {
+  const levels = asIndexedNumbers(data.Tower);
+  return CONSTRUCTION_BUILDINGS.map((building, index) => ({
+    name: building.name,
+    level: levels[index] ?? 0,
+    max: building.max,
+    extra: building.type
+  }));
+}
+
+function parseRefinery(data: Record<string, unknown>): NamedLevel[] {
+  const rows = asIndexedRows(data.Refinery);
+  return REFINERY_SALTS.map((salt) => {
+    const row = rows[salt.index] ?? asIndexedNumbers(asArray(data.Refinery)[salt.index]);
+    return {
+      name: salt.name,
+      level: row[1] ?? 0,
+      extra: (row[3] ?? 0) > 0 ? 'running' : 'idle'
+    };
+  });
+}
+
+function parseWorship(data: Record<string, unknown>): NamedLevel[] {
+  const totemInfo = asArray<unknown>(data.TotemInfo);
+  const waves = asIndexedNumbers(totemInfo[0] ?? asIndexedRows(data.TotemInfo)[0]);
+  return WORSHIP_TOTEMS.map((name, index) => ({
+    name,
+    level: waves[index] ?? 0,
+    max: 300
+  }));
+}
+
+function skullFromKills(kills: number): (typeof DEATH_NOTE_SKULLS)[number] {
+  let skull = DEATH_NOTE_SKULLS[0];
+  for (const entry of DEATH_NOTE_SKULLS) {
+    if (kills >= entry.kills) skull = entry;
+  }
+  return skull ?? DEATH_NOTE_SKULLS[0];
+}
+
+function parseDeathNote(data: Record<string, unknown>, characterCount: number): DeathNoteSummary {
+  const familyKills: number[] = [];
+  for (let charIndex = 0; charIndex < characterCount; charIndex += 1) {
+    forIndexed(data[`KLA_${charIndex}`], (mapIndex, row) => {
+      const kills = firstNumber(row);
+      familyKills[mapIndex] = Math.max(familyKills[mapIndex] ?? 0, kills);
+    });
+  }
+  const mapsWithKills = familyKills.filter((kills) => (kills ?? 0) > 0);
+  const byWorld = new Map<number, { skullRank: number; maps: number }>();
+  familyKills.forEach((kills, mapIndex) => {
+    if ((kills ?? 0) <= 0) return;
+    const world = Math.floor(mapIndex / 50) + 1;
+    const skull = skullFromKills(kills);
+    const rank = DEATH_NOTE_SKULLS.findIndex((entry) => entry.name === skull.name);
+    const current = byWorld.get(world) ?? { skullRank: DEATH_NOTE_SKULLS.length, maps: 0 };
+    current.maps += 1;
+    current.skullRank = Math.min(current.skullRank, rank);
+    byWorld.set(world, current);
+  });
+  const lowestByWorld = [...byWorld.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([world, info]) => ({
+      world,
+      skull: DEATH_NOTE_SKULLS[info.skullRank]?.name ?? 'None',
+      maps: info.maps
+    }));
+  const lowestRank = lowestByWorld.length
+    ? Math.min(...lowestByWorld.map((row) => DEATH_NOTE_SKULLS.findIndex((skull) => skull.name === row.skull)))
+    : 0;
+  return {
+    mapsWithKills: mapsWithKills.length,
+    goldSkulls: mapsWithKills.filter((kills) => kills >= 500_000).length,
+    lavaSkulls: mapsWithKills.filter((kills) => kills >= 100_000_000).length,
+    lowestSkull: DEATH_NOTE_SKULLS[lowestRank]?.name ?? 'None',
+    lowestByWorld
+  };
+}
+
+function parseMeals(data: Record<string, unknown>): number[] {
+  const meals = asArray<unknown>(data.Meals);
+  return asIndexedNumbers(meals[0] ?? asIndexedRows(data.Meals)[0]);
+}
+
+function parseKitchens(data: Record<string, unknown>): number {
+  return asIndexedRows(data.Cooking).filter((table) => (table[0] ?? 0) === 2).length;
+}
+
+function parseSigils(data: Record<string, unknown>): number {
+  const p2w = asArray<unknown>(data.CauldronP2W);
+  const row = asIndexedNumbers(p2w[4] ?? asIndexedRows(data.CauldronP2W)[4]);
+  let unlocked = 0;
+  for (let index = 0; index + 1 < row.length; index += 2) {
+    const hours = row[index] ?? 0;
+    const stored = row[index + 1] ?? -1;
+    if (hours > 0 || stored > 0) unlocked += 1;
+  }
+  return unlocked;
+}
+
+function parsePostOfficeBoxes(data: Record<string, unknown>): number {
+  return (
+    asNumber(data.CYDeliveryBoxComplete) +
+    asNumber(data.CYDeliveryBoxStreak) +
+    asNumber(data.CYDeliveryBoxMisc)
+  );
+}
+
 function countPositive(record: Record<string, unknown>): number {
   return Object.entries(record).filter(([key, value]) => key !== 'length' && asNumber(value) > 0).length;
 }
@@ -273,6 +411,14 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const gemShop = asIndexedNumbers(data.GemItemsPurchased);
   const cards = asRecord(data.Cards0);
   const achievements = asIndexedNumbers(data.AchieveReg);
+  const buildings = parseBuildings(data);
+  const saltLick = namedLevels(SALT_LICK_UPGRADES, data.SaltLick);
+  const prayers = namedLevels(PRAYER_NAMES, data.PrayOwned);
+  const worshipTotems = parseWorship(data);
+  const refinery = parseRefinery(data);
+  const arcade = asIndexedNumbers(data.ArcadeUpg);
+  const meals = parseMeals(data);
+  const deathNote = parseDeathNote(data, Math.max(count, characters.length));
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
 
@@ -298,6 +444,22 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     gemShopPurchases: gemShop.filter((owned) => owned > 0).length,
     cardsFound: countPositive(cards),
     achievements: achievements.filter((value) => value > 0).length,
+    postOfficeBoxesEarned: parsePostOfficeBoxes(data),
+    buildings,
+    buildingsUnlocked: buildings.filter((building) => building.level > 0).length,
+    saltLick,
+    prayers,
+    prayersUnlocked: prayers.filter((prayer) => prayer.level > 0).length,
+    worshipTotems,
+    worshipPeakWave: Math.max(...worshipTotems.map((totem) => totem.level), 0),
+    refinery,
+    arcadeLevels: arcade.reduce((sum, level) => sum + Math.max(0, level), 0),
+    arcadeUpgrades: arcade.filter((level) => level > 0).length,
+    deathNote,
+    mealsUnlocked: meals.filter((level) => level > 0).length,
+    mealLevels: meals.reduce((sum, level) => sum + level, 0),
+    kitchensOwned: parseKitchens(data),
+    sigilsUnlocked: parseSigils(data),
     source: bundle.source,
     raw: data
   };

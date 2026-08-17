@@ -9,6 +9,8 @@ export type Character = {
   currentMap: number;
   skills: SkillLevels;
   stats: { str: number; agi: number; wis: number; luk: number };
+  postOfficeInvested: number;
+  postOfficeBoxes: { name: string; level: number }[];
 };
 
 export type StampCategory = 'combat' | 'skills' | 'misc';
@@ -50,6 +52,21 @@ export type ForgeSummary = {
   max: number;
 };
 
+export type NamedLevel = {
+  name: string;
+  level: number;
+  max?: number;
+  extra?: string;
+};
+
+export type DeathNoteSummary = {
+  mapsWithKills: number;
+  goldSkulls: number;
+  lavaSkulls: number;
+  lowestSkull: string;
+  lowestByWorld: { world: number; skull: string; maps: number }[];
+};
+
 export type ParsedAccount = {
   names: string[];
   characters: Character[];
@@ -72,6 +89,22 @@ export type ParsedAccount = {
   gemShopPurchases: number;
   cardsFound: number;
   achievements: number;
+  postOfficeBoxesEarned: number;
+  buildings: NamedLevel[];
+  buildingsUnlocked: number;
+  saltLick: NamedLevel[];
+  prayers: NamedLevel[];
+  prayersUnlocked: number;
+  worshipTotems: NamedLevel[];
+  worshipPeakWave: number;
+  refinery: NamedLevel[];
+  arcadeLevels: number;
+  arcadeUpgrades: number;
+  deathNote: DeathNoteSummary;
+  mealsUnlocked: number;
+  mealLevels: number;
+  kitchensOwned: number;
+  sigilsUnlocked: number;
   guildName?: string;
   source: 'cloud' | 'json';
   raw: Record<string, unknown>;

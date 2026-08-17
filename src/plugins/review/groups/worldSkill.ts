@@ -59,3 +59,22 @@ export function worldAdvice(
     }
   };
 }
+
+export function notReachedGroup(
+  id: string,
+  world: string,
+  title: string,
+  detail: string
+): AdviceGroup {
+  return {
+    id,
+    world,
+    title,
+    summary: 'Locked',
+    items: [{ title: `${title} not unlocked`, detail, severity: 'info' }]
+  };
+}
+
+export function skillPeak(account: ParsedAccount, skill: string): number {
+  return Math.max(...account.characters.map((character) => character.skills[skill] ?? 0), 0);
+}

@@ -13,12 +13,24 @@ import { forgeAdvice } from './groups/forge';
 import { alchemyAdvice } from './groups/alchemy';
 import { bubblesAdvice } from './groups/bubbles';
 import { vialsAdvice } from './groups/vials';
+import { postOfficeAdvice } from './groups/postOffice';
+import { arcadeAdvice } from './groups/arcade';
+import { sigilsAdvice } from './groups/sigils';
+import { buildingsAdvice } from './groups/buildings';
+import { deathNoteAdvice } from './groups/deathNote';
+import { prayersAdvice } from './groups/prayers';
+import { worshipTotemsAdvice } from './groups/worshipTotems';
+import { saltLickAdvice } from './groups/saltLick';
+import { refineryAdvice } from './groups/refinery';
+import { mealsAdvice } from './groups/meals';
 import {
   constructionAdvice,
   cookingAdvice,
   farmingAdvice,
   sailingAdvice,
-  spelunkingAdvice
+  spelunkingAdvice,
+  trappingAdvice,
+  worshipAdvice
 } from './groups/laterWorlds';
 
 export function reviewPlugin() {
@@ -34,8 +46,20 @@ export function reviewPlugin() {
   registerAdvice(alchemyAdvice);
   registerAdvice(bubblesAdvice);
   registerAdvice(vialsAdvice);
+  registerAdvice(postOfficeAdvice);
+  registerAdvice(arcadeAdvice);
+  registerAdvice(sigilsAdvice);
   registerAdvice(constructionAdvice);
+  registerAdvice(trappingAdvice);
+  registerAdvice(worshipAdvice);
+  registerAdvice(buildingsAdvice);
+  registerAdvice(deathNoteAdvice);
+  registerAdvice(prayersAdvice);
+  registerAdvice(worshipTotemsAdvice);
+  registerAdvice(saltLickAdvice);
+  registerAdvice(refineryAdvice);
   registerAdvice(cookingAdvice);
+  registerAdvice(mealsAdvice);
   registerAdvice(sailingAdvice);
   registerAdvice(farmingAdvice);
   registerAdvice(spelunkingAdvice);

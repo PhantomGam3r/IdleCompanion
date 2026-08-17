@@ -8,6 +8,22 @@ export const constructionAdvice = worldAdvice(
   'Unlock World 3 construction in town. Buildings, refinery, and the printer all sit on this skill.'
 );
 
+export const trappingAdvice = worldAdvice(
+  'trapping',
+  'World 3',
+  'Trapping',
+  'Trapping',
+  'World 3 trapping feeds the rest of the account with critters. Place traps on a hunter and collect them on a timer.'
+);
+
+export const worshipAdvice = worldAdvice(
+  'worship',
+  'World 3',
+  'Worship',
+  'Worship',
+  'World 3 worship charges prayers and tower defense. Park a wizard on a totem when you can.'
+);
+
 export const cookingAdvice = worldAdvice(
   'cooking',
   'World 4',
