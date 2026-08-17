@@ -1,4 +1,4 @@
-import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, numberToLetter, tryToParse, toList } from './helpers';
+import { asArray, asIndexedNumbers, asIndexedRows, asNumber, asRecord, countIndexedKeys, firstNumber, forIndexed, klaToKills, numberToLetter, tryToParse, toList } from './helpers';
 import {
   ATOM_NAMES,
   BRIBE_SETS,
@@ -7,6 +7,7 @@ import {
   CROP_DEPOT_SCIENCE_INDICES,
   CROP_DEPOT_SCIENTIST_INDEX,
   ISLAND_CODES,
+  DEATH_NOTE_MAPS,
   DEATH_NOTE_SKULLS,
   FORGE_UPGRADES,
   POST_OFFICE_BOXES,
@@ -297,39 +298,41 @@ function skullFromKills(kills: number): (typeof DEATH_NOTE_SKULLS)[number] {
 }
 
 function parseDeathNote(data: Record<string, unknown>, characterCount: number): DeathNoteSummary {
-  const familyKills: number[] = [];
-  for (let charIndex = 0; charIndex < characterCount; charIndex += 1) {
-    forIndexed(data[`KLA_${charIndex}`], (mapIndex, row) => {
-      const kills = firstNumber(row);
-      familyKills[mapIndex] = Math.max(familyKills[mapIndex] ?? 0, kills);
-    });
-  }
-  const mapsWithKills = familyKills.filter((kills) => (kills ?? 0) > 0);
-  const byWorld = new Map<number, { skullRank: number; maps: number }>();
-  familyKills.forEach((kills, mapIndex) => {
-    if ((kills ?? 0) <= 0) return;
-    const world = Math.floor(mapIndex / 50) + 1;
+  const klaByCharacter = Array.from({ length: characterCount }, (_, charIndex) => toList(data[`KLA_${charIndex}`]));
+  const byWorld = new Map<number, { skullRank: number; maps: number; started: boolean }>();
+  const farmedKills: number[] = [];
+
+  for (const { world, mapId, portalReq } of DEATH_NOTE_MAPS) {
+    let kills = 0;
+    for (const kla of klaByCharacter) {
+      kills += klaToKills(firstNumber(kla[mapId]), portalReq);
+    }
+    if (kills > 0) farmedKills.push(kills);
     const skull = skullFromKills(kills);
     const rank = DEATH_NOTE_SKULLS.findIndex((entry) => entry.name === skull.name);
-    const current = byWorld.get(world) ?? { skullRank: DEATH_NOTE_SKULLS.length, maps: 0 };
+    const current = byWorld.get(world) ?? { skullRank: DEATH_NOTE_SKULLS.length, maps: 0, started: false };
     current.maps += 1;
     current.skullRank = Math.min(current.skullRank, rank);
+    if (kills > 0) current.started = true;
     byWorld.set(world, current);
-  });
+  }
+
   const lowestByWorld = [...byWorld.entries()]
+    .filter(([, info]) => info.started)
     .sort((a, b) => a[0] - b[0])
     .map(([world, info]) => ({
       world,
       skull: DEATH_NOTE_SKULLS[info.skullRank]?.name ?? 'None',
       maps: info.maps
     }));
-  const lowestRank = lowestByWorld.length
-    ? Math.min(...lowestByWorld.map((row) => DEATH_NOTE_SKULLS.findIndex((skull) => skull.name === row.skull)))
-    : 0;
+  const farmedRanks = farmedKills.map((kills) =>
+    DEATH_NOTE_SKULLS.findIndex((entry) => entry.name === skullFromKills(kills).name)
+  );
+  const lowestRank = farmedRanks.length ? Math.min(...farmedRanks) : 0;
   return {
-    mapsWithKills: mapsWithKills.length,
-    goldSkulls: mapsWithKills.filter((kills) => kills >= 500_000).length,
-    lavaSkulls: mapsWithKills.filter((kills) => kills >= 100_000_000).length,
+    mapsWithKills: farmedKills.length,
+    goldSkulls: farmedKills.filter((kills) => kills >= 500_000).length,
+    lavaSkulls: farmedKills.filter((kills) => kills >= 100_000_000).length,
     lowestSkull: DEATH_NOTE_SKULLS[lowestRank]?.name ?? 'None',
     lowestByWorld
   };

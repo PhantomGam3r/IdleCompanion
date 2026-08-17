@@ -26,6 +26,16 @@ export function formatCount(value: number): string {
   return Math.round(value).toLocaleString('en-US');
 }
 
+/**
+ * KLA stores kills remaining to open the map portal. Extra kills go negative.
+ * Unvisited slots stay 0 and should not count as portalReq kills.
+ */
+export function klaToKills(remaining: number, portalReq = 0): number {
+  if (!Number.isFinite(remaining) || remaining === 0) return 0;
+  if (!Number.isFinite(portalReq)) return Math.abs(remaining);
+  return Math.abs(remaining - portalReq);
+}
+
 export function asArray<T = unknown>(value: unknown): T[] {
   const parsed = tryToParse(value);
   return Array.isArray(parsed) ? (parsed as T[]) : [];
