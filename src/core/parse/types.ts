@@ -207,6 +207,7 @@ export type DashboardOps = {
   killroyWeekProgress: number;
   killroyThirdRoom: boolean;
   killroySkulls: number;
+  killroyUnder100: { name: string; rawName: string }[];
   weeklyBossDone: boolean;
   alternateParticles: number;
   islandAfkDays: number;

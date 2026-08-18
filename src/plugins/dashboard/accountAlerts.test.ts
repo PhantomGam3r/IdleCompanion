@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fromImportedJson } from '../../core/idleon/loadSave';
+import { KILLROY_ENEMY_LISTS } from '../../core/parse/alertCatalogs';
 import { parseSave } from '../../core/parse/parseSave';
 import { collectAccountAlerts } from './accountAlerts';
 
@@ -244,6 +245,31 @@ describe('collectAccountAlerts', () => {
     expect(ids).toContain('research-insight');
   });
 
+  it('flags Killroy monsters with fewer than 100 kills this week', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      TimeAway: { GlobalTime: 1_700_000_000, ShopRestock: 0 }
+    });
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'killroy-under-100');
+    expect(alert).toBeTruthy();
+    expect(alert?.title).toMatch(/Killroy includes a monster with less than 100 kills \(.+\)/);
+    expect(alert?.icon).toBe('etc/KillroyPrime');
+  });
+
+  it('skips Killroy under-100 when every scheduled monster already has 100 kills', () => {
+    const krBest = Object.fromEntries(KILLROY_ENEMY_LISTS.flat().map((rawName) => [rawName, 100]));
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      TimeAway: { GlobalTime: 1_700_000_000, ShopRestock: 0 },
+      KRbest: krBest
+    });
+    expect(collectAccountAlerts(account).some((item) => item.id === 'killroy-under-100')).toBe(false);
+  });
+
   it('flags fence shinies, breedability, and ChipRepo lab claims', () => {
     const account = accountFrom(
       {
@@ -275,6 +301,26 @@ describe('collectAccountAlerts', () => {
     expect(ids).toContain('breed-frogG');
     expect(ids).toContain('lab-chip-ConsoleChip0');
     expect(ids).not.toContain('lab-jewel-ConsoleJwl0');
+  });
+
+  it('flags lab ChipRepo RNG claims when ChipRepo is unset', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 150,
+      Lv0_0: [50, 0, 0, 0, 0, 20, 0, 0, 20, 0, 15],
+      TimeAway: { GlobalTime: 1_700_000_000 },
+      Lab: Object.assign([], {
+        13: [-1, -1, -1],
+        14: [0]
+      }),
+      ChestOrder: ['Copper'],
+      ChestQuantity: [30_000],
+      Meals: [[1], [], [101], [101]]
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('lab-chip-ConsoleChip0');
+    expect(ids).not.toContain('lab-chip-ConsoleChip8');
+    expect(ids).not.toContain('lab-jewel-ConsoleJwl15');
   });
 
   it('skips lab ChipRepo claims that are already claimed or missing materials', () => {
