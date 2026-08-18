@@ -246,7 +246,7 @@ export function parseDashboardOps(
   const owlFeathers = option(254);
   const owlNext = option(255);
   const owlRestartCostReady = option(253) > 0 && owlFeathers > 0 && (owlNext === 0 || option(259) > 0);
-  const extras = parseDashboardExtras(data, characters, option, liquids);
+  const extras = parseDashboardExtras(data, characters, option, liquids, bundle.serverVars);
 
   return {
     option,

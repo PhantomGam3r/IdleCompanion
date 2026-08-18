@@ -12,9 +12,14 @@ const SNEAKING_LOOT_MINUTES = 120;
 const KANGAROO_SHINY_THRESHOLD = 100;
 const HOLE_JAR_THRESHOLD = 120;
 const STAMP_REDUCER_THRESHOLD = 90;
+const RIBBON_EMPTY_THRESHOLD = 0;
+const GAMING_HOURS_THRESHOLD = 1;
+const STAMINA_CHAR_THRESHOLD = 1;
+const OVERSTIM_THRESHOLD = 1;
+const INSIGHT_THRESHOLD = 3;
 
 function cleanLabel(value: string): string {
-  return value.replace(/_/g, ' ');
+  return value.replace(/[{}]/g, '').replace(/_/g, ' ');
 }
 
 function alert(
@@ -286,6 +291,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.arcadeAfkSec >= 12 * 3600) {
       alerts.push(alert('World 2', 'arcade-balls', 'Max ball capacity has been reached', 'data/PachiBall0'));
     }
+    for (const upgrade of ops.arcadeUnmaxed) {
+      alerts.push(
+        alert(
+          'World 2',
+          `arcade-rot-${upgrade.index}`,
+          `Arcade rotation upgrade "${cleanLabel(upgrade.effect)}" is not maxed (Lv ${upgrade.level})`,
+          `data/PachiShopICON${upgrade.index}`
+        )
+      );
+    }
     ops.liquids.forEach((current, index) => {
       if (current >= 200) {
         alerts.push(
@@ -347,6 +362,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
   }
 
   if (world >= 3) {
+    for (const item of ops.printerFull) {
+      alerts.push(
+        alert(
+          'World 3',
+          `printer-${item.rawName}`,
+          `Printing is at maximum (storage) capacity for ${cleanLabel(item.name)}`,
+          `data/${item.rawName}`
+        )
+      );
+    }
     if (ops.libraryBooks >= LIBRARY_BOOK_THRESHOLD) {
       alerts.push(
         alert('World 3', 'library', `Library has ${ops.libraryBooks} books ready`, 'data/Libz')
@@ -456,9 +481,79 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
+    if (ops.emptyRibbonSlots !== null && ops.emptyRibbonSlots <= RIBBON_EMPTY_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 4',
+          'ribbons',
+          `You have reached your threshold of ${ops.emptyRibbonSlots} empty ribbon slots`,
+          'data/Ribbon0'
+        )
+      );
+    }
+    if (ops.cookingMasteryPurple > 0) {
+      alerts.push(
+        alert(
+          'World 4',
+          'cook-mastery-purple',
+          `You have ${ops.cookingMasteryPurple} unspent purple Cooking Mastery point${ops.cookingMasteryPurple === 1 ? '' : 's'}`,
+          'etc/CookingMastery'
+        )
+      );
+    }
+    if (ops.cookingMasteryYellow > 0) {
+      alerts.push(
+        alert(
+          'World 4',
+          'cook-mastery-yellow',
+          `You have ${ops.cookingMasteryYellow} unspent yellow Cooking Mastery point${ops.cookingMasteryYellow === 1 ? '' : 's'}`,
+          'etc/CookingMastery'
+        )
+      );
+    }
   }
 
   if (world >= 5) {
+    if (ops.gamingSproutsCapacity > 0 && ops.gamingSprouts >= ops.gamingSproutsCapacity) {
+      alerts.push(
+        alert(
+          'World 5',
+          'gaming-sprouts',
+          `Max sprouts capacity has reached (${ops.gamingSprouts})`,
+          'etc/Sprouts'
+        )
+      );
+    }
+    if (ops.gamingSproutsCapacity > 0 && ops.gamingDrops >= ops.gamingSproutsCapacity) {
+      alerts.push(
+        alert(
+          'World 5',
+          'gaming-drops',
+          `Sprinkler drops has reached it's capacity (${ops.gamingDrops})`,
+          'data/GamingItem0b'
+        )
+      );
+    }
+    if (ops.gamingSquirrelUnlocked && ops.gamingSquirrelHours >= GAMING_HOURS_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 5',
+          'gaming-squirrel',
+          `${ops.gamingSquirrelHours} hours has passed since you've clicked the squirrel`,
+          'data/GamingItem2'
+        )
+      );
+    }
+    if (ops.gamingShovelUnlocked && ops.gamingShovelHours >= GAMING_HOURS_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 5',
+          'gaming-shovel',
+          `${ops.gamingShovelHours} hours has passed since you've clicked the shovel`,
+          'data/GamingItem1'
+        )
+      );
+    }
     if (account.sailingBoats > 0 && ops.option(124) >= 259200) {
       alerts.push(
         alert('World 5', 'sailing-chests', "You've reached the maximum capacity of chests", 'npcs/Chesty')
@@ -670,6 +765,59 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
+    if (ops.fullStaminaCharacters >= STAMINA_CHAR_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 7',
+          'full-stamina',
+          `${ops.fullStaminaCharacters} character${ops.fullStaminaCharacters === 1 ? '' : 's'} ${ops.fullStaminaCharacters === 1 ? 'has' : 'have'} full stamina`,
+          'data/CaveShopUpg4'
+        )
+      );
+    }
+    if (ops.overstimLevel >= OVERSTIM_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 7',
+          'overstim',
+          `Overstim level has reached ${ops.overstimLevel} (threshold: ${OVERSTIM_THRESHOLD})`,
+          'data/CaveShopUpg6'
+        )
+      );
+    }
+    if (ops.legendPointsLeft > 0 && ops.legendPointsSpent < ops.legendMaxSpendable) {
+      alerts.push(
+        alert(
+          'World 7',
+          'legend-points',
+          `You have ${ops.legendPointsLeft} unspent legend talent point${ops.legendPointsLeft === 1 ? '' : 's'}`,
+          'data/LegendTalentIcon0'
+        )
+      );
+    }
+    if (ops.masterclassCheapAvailable > 0) {
+      alerts.push(
+        alert(
+          'World 7',
+          'masterclass-cheap',
+          `You have ${ops.masterclassCheapAvailable} cheaper masterclass upgrade${ops.masterclassCheapAvailable === 1 ? '' : 's'} available (${ops.masterclassCheapUsed}/${ops.masterclassCheapMax})`,
+          'data/LegendTalentIcon12'
+        )
+      );
+    }
+    if (ops.doubleClusterReady) {
+      alerts.push(alert('World 7', 'double-cluster', 'You can afford Double Clusters upgrade', 'etc/Cluster'));
+    }
+    if (ops.jeweledCogsUnlocked && ops.jeweledCogAvailable > 0) {
+      alerts.push(
+        alert(
+          'World 7',
+          'jeweled-cogs',
+          `You have ${ops.jeweledCogAvailable} jeweled cog pull${ops.jeweledCogAvailable === 1 ? '' : 's'} left (${ops.jeweledCogCurrent}/${ops.jeweledCogMax})`,
+          'data/CogCry0'
+        )
+      );
+    }
     if (ops.mineheadTriesLeft > 0) {
       alerts.push(
         alert(
@@ -687,6 +835,19 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
           'research-rolls',
           `You have ${ops.researchRollsLeft} observation roll${ops.researchRollsLeft === 1 ? '' : 's'} left`,
           'data/ResObsClip'
+        )
+      );
+    }
+    if (ops.insightObservations.length > 0) {
+      alerts.push(
+        alert(
+          'World 7',
+          'research-insight',
+          `${ops.insightObservations.length} observation${ops.insightObservations.length === 1 ? '' : 's'} at insight Lv. ${INSIGHT_THRESHOLD}+`,
+          'data/ResMagni1',
+          ops.insightObservations
+            .map((obs) => `${cleanLabel(obs.name)} - Lv. ${obs.insightLevel}`)
+            .join(', ')
         )
       );
     }
@@ -711,6 +872,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
           )
         );
       }
+    }
+    for (const sushi of ops.sushiKnowledgeReady) {
+      alerts.push(
+        alert(
+          'World 7',
+          `sushi-kn-${sushi.index}`,
+          `${cleanLabel(sushi.name)} is ready for knowledge level-up (Lv.${sushi.level})`,
+          `data/Sushi${sushi.index}`
+        )
+      );
     }
     if (ops.buttonSkips > 0) {
       alerts.push(

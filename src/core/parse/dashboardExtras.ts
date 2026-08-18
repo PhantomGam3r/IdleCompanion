@@ -1,6 +1,17 @@
 import {
+  ARCADE_EFFECTS,
   BUILD_COST_MULTIPLIER,
   DEFAULT_MEAL_MAX_LEVEL,
+  DOUBLE_CLUSTER_INDEX,
+  DOUBLE_CLUSTER_MAX,
+  DOUBLE_CLUSTER_X1,
+  DOUBLE_CLUSTER_X2,
+  JEWEL_COGS_SUPERBIT_INDEX,
+  LEGEND_COG_TALENT_INDEX,
+  LEGEND_COG_TALENT_X2,
+  LEGEND_MASTERCLASS_TALENT_INDEX,
+  LEGEND_MASTERCLASS_TALENT_X2,
+  LEGEND_TALENT_MAX,
   MAX_VIAL_LEVEL,
   MEAL_INFO,
   NAMETAGS,
@@ -8,9 +19,11 @@ import {
   PREMIUM_HATS,
   REFINERY_POWER_CAPS,
   REFINERY_SALT_INFO,
+  RESEARCH_OCCURRENCE_NAMES,
   SIGIL_INFO,
   STAMP_GOLD,
   STUDY_NAMES,
+  SUSHI_NAMES,
   TOWER_BONUS_INC,
   TROPHIES,
   VIAL_COSTS,
@@ -20,7 +33,7 @@ import {
   type StampGoldInfo
 } from './alertCatalogs';
 import { CONSTRUCTION_BUILDINGS } from './catalogs';
-import { asIndexedNumbers, asNumber, toList } from './helpers';
+import { asIndexedNumbers, asNumber, numberToLetter, toList } from './helpers';
 import type { Character } from './types';
 
 export type NamedIcon = { name: string; rawName: string };
@@ -60,6 +73,33 @@ export type DashboardExtras = {
   holeVillagersReady: { name: string; index: number }[];
   holeStudiesReady: { name: string; index: number }[];
   holeLayersBrokenToday: number;
+  arcadeUnmaxed: { effect: string; level: number; index: number }[];
+  printerFull: NamedIcon[];
+  emptyRibbonSlots: number | null;
+  cookingMasteryYellow: number;
+  cookingMasteryPurple: number;
+  gamingSprouts: number;
+  gamingSproutsCapacity: number;
+  gamingDrops: number;
+  gamingShovelHours: number;
+  gamingSquirrelHours: number;
+  gamingShovelUnlocked: boolean;
+  gamingSquirrelUnlocked: boolean;
+  fullStaminaCharacters: number;
+  overstimLevel: number;
+  legendPointsLeft: number;
+  legendPointsSpent: number;
+  legendMaxSpendable: number;
+  masterclassCheapAvailable: number;
+  masterclassCheapUsed: number;
+  masterclassCheapMax: number;
+  doubleClusterReady: boolean;
+  jeweledCogAvailable: number;
+  jeweledCogCurrent: number;
+  jeweledCogMax: number;
+  jeweledCogsUnlocked: boolean;
+  sushiKnowledgeReady: { name: string; index: number; level: number }[];
+  insightObservations: { name: string; index: number; insightLevel: number }[];
 };
 
 const STAMP_SPEND_PERCENT = 25;
@@ -242,11 +282,72 @@ function titleCase(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function atomColliderThreshold(option: number): number {
+  if (option === 0) return 15e6;
+  if (option === 1) return 25e6;
+  if (option === 2) return 1e8;
+  if (option === 3) return 25e7;
+  return 105e7;
+}
+
+function arcadeRotation(serverVars: Record<string, unknown> | null): number[] {
+  if (!serverVars) return [];
+  const raw = serverVars.ArcadeBonuses ?? serverVars.arcadeBonuses;
+  return asIndexedNumbers(raw).filter((index) => Number.isFinite(index));
+}
+
+function printerProduction(data: Record<string, unknown>, characterCount: number): Map<string, number> {
+  const printData = toList(data.Print ?? data.Printer).slice(5);
+  const extra = toList(data.PrinterXtra);
+  const totals = new Map<string, number>();
+  for (let charIndex = 0; charIndex < characterCount; charIndex += 1) {
+    let samples: unknown[] = printData.slice(charIndex * 14, charIndex * 14 + 14);
+    if (extra.length > 0) {
+      samples.splice(-4, 0, extra.slice(charIndex * 10, charIndex * 10 + 10));
+      samples = samples.flat();
+    }
+    for (let sampleIndex = 0; sampleIndex + 1 < samples.length; sampleIndex += 2) {
+      if (sampleIndex < samples.length - 4) continue;
+      const item = samples[sampleIndex];
+      if (typeof item !== 'string' || !item || item === 'Blank') continue;
+      totals.set(item, (totals.get(item) ?? 0) + asNumber(samples[sampleIndex + 1]));
+    }
+  }
+  return totals;
+}
+
+function hoursSinceUnix(lastClick: number, nowSec: number): number {
+  if (lastClick < 1e6) return 0;
+  return Math.max(0, Math.floor((nowSec - lastClick) / 3600));
+}
+
+function sushiKnowledgeReq(level: number): number {
+  return (3 + (level + Math.pow(level, 1.5))) * Math.pow(1.5, Math.max(0, level - 2));
+}
+
+function observationLensTypes(raw: unknown, observationIndex: number): number[] {
+  const list = toList(raw);
+  const types: number[] = [];
+  if (list.length > 0 && Array.isArray(list[0])) {
+    for (const row of list) {
+      const nums = asIndexedNumbers(row);
+      if (nums[2] === observationIndex) types.push(nums[3] ?? -1);
+    }
+    return types;
+  }
+  const nums = asIndexedNumbers(raw);
+  for (let slot = 0; slot * 4 + 3 < nums.length; slot += 1) {
+    if (nums[slot * 4 + 2] === observationIndex) types.push(nums[slot * 4 + 3] ?? -1);
+  }
+  return types;
+}
+
 export function parseDashboardExtras(
   data: Record<string, unknown>,
   characters: Character[],
   option: (index: number) => number,
-  liquids: number[]
+  liquids: number[],
+  serverVars: Record<string, unknown> | null = null
 ): DashboardExtras {
   const characterCount = Math.max(characters.length, 1);
   const amounts = collectAmounts(data, characterCount);
@@ -468,6 +569,130 @@ export function parseDashboardExtras(
     if (progress >= req) holeStudiesReady.push({ name: titleCase(name), index });
   });
 
+  const arcadeLevels = asIndexedNumbers(data.ArcadeUpg);
+  const arcadeUnmaxed = arcadeRotation(serverVars)
+    .filter((index) => index >= 0 && index < ARCADE_EFFECTS.length && (arcadeLevels[index] ?? 0) < 100)
+    .map((index) => ({
+      effect: ARCADE_EFFECTS[index] ?? `Upgrade ${index}`,
+      level: arcadeLevels[index] ?? 0,
+      index
+    }));
+
+  const atomThreshold = atomColliderThreshold(option(133));
+  const printerFull: NamedIcon[] = [];
+  printerProduction(data, characterCount).forEach((printed, rawName) => {
+    const stored = amounts.get(rawName) ?? 0;
+    const atomable = stored >= atomThreshold - atomThreshold * 0.01;
+    const overflowPrint = printed >= atomThreshold && !atomable;
+    const overflowStorage = printed > atomThreshold - stored && !atomable;
+    if (atomable || overflowPrint || overflowStorage) {
+      printerFull.push({ name: rawName, rawName });
+    }
+  });
+
+  const ribbonRaw = data.Ribbon;
+  let emptyRibbonSlots: number | null = null;
+  if (ribbonRaw !== undefined && ribbonRaw !== null) {
+    const ribbons = asIndexedNumbers(ribbonRaw).slice(0, 28);
+    if (ribbons.length > 0 || toList(ribbonRaw).length > 0) {
+      let empty = 0;
+      for (let slot = 0; slot < 28; slot += 1) {
+        if (!(ribbons[slot] ?? 0)) empty += 1;
+      }
+      emptyRibbonSlots = empty;
+    }
+  }
+
+  let cookingMasteryYellow = 0;
+  let cookingMasteryPurple = 0;
+  const cookMaster = toList(data.CookMaster);
+  if (cookMaster[1] !== undefined && cookMaster[1] !== null) {
+    const masteryLevel = asIndexedNumbers(cookMaster[1])[0] ?? 0;
+    const categorySpent = asIndexedNumbers(cookMaster[2]).reduce((sum, value) => sum + value, 0);
+    const nodeSpent = asIndexedNumbers(cookMaster[0]).reduce((sum, value) => sum + value, 0);
+    const basePoints = masteryLevel + 1;
+    cookingMasteryPurple = Math.max(0, basePoints - categorySpent);
+    cookingMasteryYellow = Math.max(0, basePoints - nodeSpent);
+  }
+
+  const gaming = toList(data.Gaming);
+  const gamingSprout = toList(data.GamingSprout);
+  const gamingUnlocked = data.Gaming != null && data.GamingSprout != null;
+  const gemShop = asIndexedNumbers(data.GemItemsPurchased);
+  const sproutsCapacity = gamingUnlocked
+    ? Math.round(Math.min(24, 3 + asNumber(gaming[3]) + (gemShop[133] ?? 0)))
+    : 0;
+  let gamingSprouts = 0;
+  for (let slot = 0; slot < 25; slot += 1) {
+    if ((asIndexedNumbers(gamingSprout[slot])[1] ?? 0) > 0) gamingSprouts += 1;
+  }
+  const sprinkler = asIndexedNumbers(gamingSprout[25]);
+  const gamingDrops = Math.floor(Math.pow((sprinkler[1] ?? 0) * (1 + (sprinkler[0] ?? 0) / 100) / 3600, 0.75));
+  const shovel = asIndexedNumbers(gamingSprout[26]);
+  const squirrelRow = asIndexedNumbers(gamingSprout[27]);
+  const nowSec = Date.now() / 1000;
+  const gamingShovelUnlocked = gamingUnlocked && (shovel[0] ?? 0) > 0;
+  const gamingSquirrelUnlocked = gamingUnlocked && (squirrelRow[0] ?? 0) > 0;
+  const gamingShovelHours = gamingShovelUnlocked ? hoursSinceUnix(shovel[1] ?? 0, nowSec) : 0;
+  const gamingSquirrelHours = gamingSquirrelUnlocked ? hoursSinceUnix(squirrelRow[1] ?? 0, nowSec) : 0;
+
+  const staminaCurrent = asIndexedNumbers(spelunk[3]);
+  let fullStaminaCharacters = 0;
+  characters.forEach((character, index) => {
+    const maxStamina = 14 + (character.skills.Spelunking ?? 0);
+    if ((staminaCurrent[index] ?? 0) >= maxStamina) fullStaminaCharacters += 1;
+  });
+  const overstimLevel = asIndexedNumbers(spelunk[4])[1] ?? 0;
+
+  const legendLevels = asIndexedNumbers(spelunk[18]);
+  const legendPointsOwned = characters.reduce(
+    (sum, character) => sum + Math.max(0, Math.floor((character.combatLevel - 400) / 100)),
+    0
+  );
+  const legendPointsSpent = legendLevels.slice(0, 50).reduce((sum, level) => sum + (level ?? 0), 0);
+  const legendMaxSpendable = LEGEND_TALENT_MAX.reduce((sum, max) => sum + max, 0);
+  const legendPointsLeft = Math.round(legendPointsOwned - legendPointsSpent);
+  const masterclassCheapMax = LEGEND_MASTERCLASS_TALENT_X2 * (legendLevels[LEGEND_MASTERCLASS_TALENT_INDEX] ?? 0);
+  const masterclassCheapUsed = option(480);
+  const masterclassCheapAvailable = masterclassCheapMax - masterclassCheapUsed;
+
+  const clusterLevel = asIndexedNumbers(spelunk[45])[DOUBLE_CLUSTER_INDEX] ?? 0;
+  const clusterCost = DOUBLE_CLUSTER_X1 * Math.pow(DOUBLE_CLUSTER_X2, clusterLevel);
+  const doubleClusterReady = clusterLevel < DOUBLE_CLUSTER_MAX && option(486) >= clusterCost;
+
+  const superbits = typeof gaming[12] === 'string' ? gaming[12] : String(gaming[12] ?? '');
+  const jeweledCogsUnlocked = superbits.includes(numberToLetter(JEWEL_COGS_SUPERBIT_INDEX));
+  const jeweledCogCurrent = option(414);
+  const jeweledCogMax = Math.round(1 + LEGEND_COG_TALENT_X2 * (legendLevels[LEGEND_COG_TALENT_INDEX] ?? 0));
+  const jeweledCogAvailable = jeweledCogMax - jeweledCogCurrent;
+
+  const sushi = toList(data.Sushi);
+  const sushiTrack = toList(sushi[5]);
+  const sushiXp = asIndexedNumbers(sushi[6]);
+  const sushiKnowledgeLevels = asIndexedNumbers(sushi[7]);
+  const sushiKnowledgeReady: { name: string; index: number; level: number }[] = [];
+  SUSHI_NAMES.forEach((name, index) => {
+    const tracked = sushiTrack[index];
+    const discovered = tracked === undefined || tracked === null ? -1 : asNumber(tracked, -1);
+    if (discovered < 0) return;
+    const level = sushiKnowledgeLevels[index] ?? 0;
+    if ((sushiXp[index] ?? 0) >= sushiKnowledgeReq(level)) {
+      sushiKnowledgeReady.push({ name, index, level });
+    }
+  });
+
+  const research = toList(data.Research);
+  const foundState = asIndexedNumbers(research[2]);
+  const insightLevels = asIndexedNumbers(research[4]);
+  const insightObservations: { name: string; index: number; insightLevel: number }[] = [];
+  RESEARCH_OCCURRENCE_NAMES.forEach((name, index) => {
+    if (name === 'Name') return;
+    if ((foundState[index] ?? 0) < 1) return;
+    if (!observationLensTypes(research[5], index).includes(1)) return;
+    const insightLevel = insightLevels[index] ?? 0;
+    if (insightLevel >= 3) insightObservations.push({ name, index, insightLevel });
+  });
+
   return {
     affordableStampCount,
     affordableStampPercent: rawMoney > 0 ? Math.ceil((stampTotal / rawMoney) * 100) : 0,
@@ -501,7 +726,34 @@ export function parseDashboardExtras(
     holeJarsFull,
     holeVillagersReady,
     holeStudiesReady,
-    holeLayersBrokenToday: layersBroken
+    holeLayersBrokenToday: layersBroken,
+    arcadeUnmaxed,
+    printerFull,
+    emptyRibbonSlots,
+    cookingMasteryYellow,
+    cookingMasteryPurple,
+    gamingSprouts,
+    gamingSproutsCapacity: sproutsCapacity,
+    gamingDrops,
+    gamingShovelHours,
+    gamingSquirrelHours,
+    gamingShovelUnlocked,
+    gamingSquirrelUnlocked,
+    fullStaminaCharacters,
+    overstimLevel,
+    legendPointsLeft,
+    legendPointsSpent,
+    legendMaxSpendable,
+    masterclassCheapAvailable,
+    masterclassCheapUsed,
+    masterclassCheapMax,
+    doubleClusterReady,
+    jeweledCogAvailable,
+    jeweledCogCurrent,
+    jeweledCogMax,
+    jeweledCogsUnlocked,
+    sushiKnowledgeReady,
+    insightObservations
   };
 }
 
