@@ -1,7 +1,7 @@
-import { KILLROY_ENEMY_LISTS, KILLROY_ENEMY_NAMES } from './alertCatalogs';
+import { DUNGEON_RANK_REQS, DUNGEON_TRAITS, KILLROY_ENEMY_LISTS, KILLROY_ENEMY_NAMES } from './alertCatalogs';
 import { parseDashboardExtras } from './dashboardExtras';
 import { asArray, asIndexedNumbers, asNumber, asRecord, forIndexed, numberToLetter, toList } from './helpers';
-import { lavaListIndex, lavaRandom1000 } from './lavaRand';
+import { LavaRand, lavaListIndex, lavaRandom1000 } from './lavaRand';
 import type { Character, DashboardOps } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
 
@@ -26,6 +26,8 @@ const KEY_NPCS = [
 const FAMILIAR_MAX_LEVEL = 25;
 const MINEHEAD_EXOTIC_BONUS = 2;
 const SUSHI_EXOTIC_BONUS = 3;
+const KILLROY_CLASS_NAMES = ['Beginner', 'Warrior', 'Archer', 'Mage'];
+const KILLROY_SKIP_ROOMS: Record<number, number[]> = { 1: [0], 21: [0, 1], 321: [0, 1, 2] };
 
 function sushiUniqueCount(data: Record<string, unknown>): number {
   const track = toList(toList(data.Sushi)[5]);
@@ -106,6 +108,65 @@ function thisWeekKillroyMonsters(
     monsters.push({ name: KILLROY_ENEMY_NAMES[rawName] ?? rawName, rawName });
   }
   return monsters;
+}
+
+function killroyWeekSeed(data: Record<string, unknown>, option: (index: number) => number, globalTimeSec: number): number {
+  const timeAway = asRecord(data.TimeAway);
+  const shopRestock = asNumber(timeAway.ShopRestock);
+  return Math.floor((globalTimeSec + Math.round(shopRestock + 86400 * option(39))) / 604800);
+}
+
+function thisWeekKillroyClasses(
+  data: Record<string, unknown>,
+  option: (index: number) => number,
+  globalTimeSec: number,
+  killroySwap: number
+): string[] {
+  const rooms = option(227) === 1 ? 3 : 2;
+  const baseSeed = killroyWeekSeed(data, option, globalTimeSec);
+  const skip = KILLROY_SKIP_ROOMS[option(113)] ?? [];
+  const classes: string[] = [];
+  for (let room = 0; room < rooms; room += 1) {
+    if (skip.includes(room)) continue;
+    const seed = Math.round(baseSeed + (50 * room + killroySwap));
+    const random = 3 * new LavaRand(seed).rand();
+    const classIndex = Math.max(0, Math.min(3, Math.ceil(random - Math.floor(room / 2))));
+    classes.push(KILLROY_CLASS_NAMES[classIndex] ?? 'Beginner');
+  }
+  return classes;
+}
+
+function dungeonRankFromProgress(progress: number): number {
+  let rankIndex = 0;
+  for (let index = 0; index < DUNGEON_RANK_REQS.length; index += 1) {
+    if (progress > (DUNGEON_RANK_REQS[index] ?? 0)) rankIndex = index;
+  }
+  return rankIndex + 1;
+}
+
+function unpickedDungeonTraits(data: Record<string, unknown>, progress: number): string[] {
+  const rank = dungeonRankFromProgress(progress);
+  const active = new Set(
+    toList(toList(data.DungUpg)[2])
+      .map((value) => asNumber(value, Number.NaN))
+      .filter((value) => Number.isFinite(value))
+  );
+  const sections: string[] = [];
+  let bonusIndex = 0;
+  for (const trait of DUNGEON_TRAITS) {
+    const start = bonusIndex;
+    bonusIndex += trait.bonusCount;
+    if (rank <= trait.levelReq) continue;
+    let noneActive = true;
+    for (let index = start; index < start + trait.bonusCount; index += 1) {
+      if (active.has(index)) {
+        noneActive = false;
+        break;
+      }
+    }
+    if (noneActive) sections.push(trait.section);
+  }
+  return sections;
 }
 
 export function parseDashboardOps(
@@ -247,9 +308,7 @@ export function parseDashboardOps(
   const companionClaimReady =
     lastFreeClaim > 0 && globalTimeSec * 1000 - lastFreeClaim >= 594e6;
 
-  const dungUpg = toList(data.DungUpg);
-  const selectedTraits = toList(dungUpg[2]);
-  const dungeonTraitsUnpicked = option(71) > 50 && selectedTraits.length === 0 ? 1 : 0;
+  const dungeonTraitsUnpicked = unpickedDungeonTraits(data, option(71));
 
   const guild = asRecord(data.Guild);
   const guildTasks = toList(guild.guildTasks ?? guild.tasks);
@@ -327,13 +386,15 @@ export function parseDashboardOps(
   const owlRestartCostReady = option(253) > 0 && owlFeathers > 0 && (owlNext === 0 || option(259) > 0);
   const extras = parseDashboardExtras(data, characters, option, liquids, bundle.serverVars);
   const krBest = asRecord(data.KRbest);
+  const killroySwap = asNumber(bundle.serverVars?.KillroySwap);
   const killroyUnder100 = thisWeekKillroyMonsters(
     data,
     characters,
     option,
     globalTimeSec,
-    asNumber(bundle.serverVars?.KillroySwap)
+    killroySwap
   ).filter((monster) => asNumber(krBest[monster.rawName]) < 100);
+  const killroyClasses = thisWeekKillroyClasses(data, option, globalTimeSec, killroySwap);
 
   return {
     option,
@@ -353,6 +414,7 @@ export function parseDashboardOps(
     killroyThirdRoom: option(227) === 1,
     killroySkulls: option(105),
     killroyUnder100,
+    killroyClasses,
     weeklyBossDone: option(190) > 0,
     alternateParticles: option(135),
     islandAfkDays: option(160),

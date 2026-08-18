@@ -111,6 +111,7 @@ export type DashboardExtras = {
   breedabilityPets: { name: string; rawName: string; breedingLevel: number }[];
   labChipsReady: NamedIcon[];
   labJewelsReady: NamedIcon[];
+  vialAttemptItemsReady: boolean;
   buttonTaskReady: boolean;
   buttonTaskDescription: string;
 };
@@ -427,10 +428,14 @@ function chipRepoSlot(raw: unknown, slot: number): number | undefined {
   return undefined;
 }
 
-function jadeBlingUnlocked(data: Record<string, unknown>): boolean {
+function jadeUpgradeUnlocked(data: Record<string, unknown>, upgradeIndex: number): boolean {
   const extra = toList(toList(data.Ninja)[102]);
   const letters = typeof extra[9] === 'string' ? extra[9] : '';
-  return letters.includes(numberToLetter(37));
+  return letters.includes(numberToLetter(upgradeIndex));
+}
+
+function jadeBlingUnlocked(data: Record<string, unknown>): boolean {
+  return jadeUpgradeUnlocked(data, 37);
 }
 
 function formatButtonTask(description: string, requirement: number): string {
@@ -602,9 +607,11 @@ export function parseDashboardExtras(
 
   const vialLevels = asIndexedNumbers(toList(data.CauldronInfo)[4]);
   const vialsReady: NamedIcon[] = [];
+  let vialAttemptItemsReady = false;
   VIAL_INFO.forEach((vial, index) => {
     if (!vial) return;
     const level = vialLevels[index] ?? 0;
+    if (level === 0 && (amounts.get(vial.mainItem) ?? 0) > 0) vialAttemptItemsReady = true;
     if (level <= 0 || level >= MAX_VIAL_LEVEL) return;
     const cost = VIAL_COSTS[level] ?? Number.POSITIVE_INFINITY;
     const stored = (amounts.get(vial.mainItem) ?? 0) - GREEN_STACK;
@@ -722,12 +729,29 @@ export function parseDashboardExtras(
 
   const p2w = toList(data.CauldronP2W);
   const sigilRow = asIndexedNumbers(p2w[4]);
+  const alchemyJobs = asIndexedNumbers(data.CauldronJobs1);
+  const ionizedSigils = jadeUpgradeUnlocked(data, 31);
+  const etherealSigils = (asIndexedNumbers(toList(data.Spelunk)[0])[6] ?? 0) > 0;
+  const eclecticSigils = (asIndexedNumbers(toList(data.Research)[0])[128] ?? 0) > 0;
   const sigilsReady: { name: string; index: number }[] = [];
   SIGIL_INFO.forEach((sigil, index) => {
     const progress = sigilRow[index * 2] ?? 0;
     const unlocked = sigilRow[index * 2 + 1] ?? -1;
     if (unlocked < 0) return;
-    if (progress >= sigil.boostCost) sigilsReady.push({ name: sigil.name, index });
+    const assigned = alchemyJobs.some(
+      (activity, characterIndex) =>
+        characterIndex < characterCount && activity >= 100 && Math.floor(activity - 100) === index
+    );
+    if (!assigned) return;
+    const cost =
+      eclecticSigils && sigil.eclecticCost
+        ? sigil.eclecticCost
+        : etherealSigils && sigil.etherealCost
+          ? sigil.etherealCost
+          : ionizedSigils && sigil.jadeCost
+            ? sigil.jadeCost
+            : sigil.boostCost;
+    if (progress >= cost) sigilsReady.push({ name: sigil.name, index });
   });
 
   const atoms = asIndexedNumbers(data.Atoms);
@@ -1074,6 +1098,7 @@ export function parseDashboardExtras(
     breedabilityPets,
     labChipsReady,
     labJewelsReady,
+    vialAttemptItemsReady,
     buttonTaskReady,
     buttonTaskDescription
   };

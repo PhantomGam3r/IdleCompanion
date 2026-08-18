@@ -18,6 +18,7 @@ describe('collectAccountAlerts', () => {
       CharacterClass_0: 1,
       CurrentMap_0: 120,
       Lv0_0: [80, 0, 0, 0, 0, 20, 0, 0, 40],
+      Rift: [25],
       OptLacc: Object.assign([], {
         55: 22,
         101: 0,
@@ -256,6 +257,95 @@ describe('collectAccountAlerts', () => {
     expect(alert).toBeTruthy();
     expect(alert?.title).toMatch(/Killroy includes a monster with less than 100 kills \(.+\)/);
     expect(alert?.icon).toBe('etc/KillroyPrime');
+  });
+
+  it('includes remaining Killroy class names in the weekly alert', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      TimeAway: { GlobalTime: 1_700_000_000, ShopRestock: 0 },
+      OptLacc: Object.assign([], { 113: 0 })
+    });
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'killroy');
+    expect(alert?.title).toMatch(/You haven't done a killroy this week \((Beginner|Warrior|Archer|Mage), (Beginner|Warrior|Archer|Mage)\)/);
+  });
+
+  it('flags unpicked dungeon trait sections from dungeon rank', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 20,
+      Lv0_0: [40],
+      DungUpg: Object.assign([], { 2: [] }),
+      OptLacc: Object.assign([], { 71: 50 })
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('dungeon-trait-Beginner Traits');
+    expect(ids).not.toContain('dungeon-traits');
+  });
+
+  it('skips gilded stamps before Stamp Mastery rift and vial attempts without locked vial items', () => {
+    const skipped = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      Rift: [10],
+      CauldronP2W: Object.assign([], { 5: [3] }),
+      OptLacc: Object.assign([], { 154: 4 })
+    });
+    const skippedIds = collectAccountAlerts(skipped).map((item) => item.id);
+    expect(skippedIds).not.toContain('gilded-stamps');
+    expect(skippedIds).not.toContain('vial-attempts');
+
+    const ready = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      Rift: [25],
+      CauldronInfo: Object.assign([], { 4: [0] }),
+      CauldronP2W: Object.assign([], { 5: [2] }),
+      ChestOrder: ['Copper'],
+      ChestQuantity: [10],
+      OptLacc: Object.assign([], { 154: 4 })
+    });
+    const readyIds = collectAccountAlerts(ready).map((item) => item.id);
+    expect(readyIds).toContain('gilded-stamps');
+    expect(readyIds).toContain('vial-attempts');
+  });
+
+  it('flags ready sigils only when a character is assigned', () => {
+    const assigned = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      CauldronJobs1: [100],
+      CauldronP2W: Object.assign([], { 4: [100, 0] })
+    });
+    expect(collectAccountAlerts(assigned).map((item) => item.id)).toContain('sigil-0');
+
+    const unassigned = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      CauldronJobs1: [0],
+      CauldronP2W: Object.assign([], { 4: [100, 0] })
+    });
+    expect(collectAccountAlerts(unassigned).map((item) => item.id)).not.toContain('sigil-0');
+  });
+
+  it('uses spelunking skill mastery for the daily page-read cap', () => {
+    const skills = Array.from({ length: 20 }, () => 0);
+    skills[0] = 50;
+    skills[19] = 500;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 310,
+      Lv0_0: skills,
+      Rift: [15],
+      OptLacc: Object.assign([], { 410: 0 })
+    });
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'page-reads');
+    expect(alert?.title).toBe('You have 8 page reads available (0/8)');
   });
 
   it('skips Killroy under-100 when every scheduled monster already has 100 kills', () => {

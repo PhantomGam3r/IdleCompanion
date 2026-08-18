@@ -208,6 +208,7 @@ export type DashboardOps = {
   killroyThirdRoom: boolean;
   killroySkulls: number;
   killroyUnder100: { name: string; rawName: string }[];
+  killroyClasses: string[];
   weeklyBossDone: boolean;
   alternateParticles: number;
   islandAfkDays: number;
@@ -256,7 +257,7 @@ export type DashboardOps = {
   shopItemsLeft: number;
   emptyFamilyObols: number;
   companionClaimReady: boolean;
-  dungeonTraitsUnpicked: number;
+  dungeonTraitsUnpicked: string[];
   guildDailyLeft: number;
   guildWeeklyLeft: number;
   owlFeathers: number;
@@ -326,6 +327,7 @@ export type DashboardOps = {
   breedabilityPets: { name: string; rawName: string; breedingLevel: number }[];
   labChipsReady: { name: string; rawName: string }[];
   labJewelsReady: { name: string; rawName: string }[];
+  vialAttemptItemsReady: boolean;
   buttonTaskReady: boolean;
   buttonTaskDescription: string;
 };

@@ -21,6 +21,11 @@ const SHINY_LEVEL_THRESHOLD = 5;
 const BREEDABILITY_LEVEL_THRESHOLD = 5;
 const FAMILIAR_LEVEL_THRESHOLD = 10;
 const FARM_OG_THRESHOLD = 0;
+const STAMP_MASTERY_RIFT = 25;
+const PAGE_READ_BASE = 5;
+const PAGE_READ_MASTERY_BONUS = 3;
+const PAGE_READ_MASTERY_INDEX = 4;
+const SKILL_MASTERY_RIFT = 15;
 
 function cleanLabel(value: string): string {
   return value.replace(/[{}]/g, '').replace(/_/g, ' ');
@@ -34,6 +39,27 @@ function alert(
   detail?: string
 ): DashboardAlert {
   return { world, id, title, icon, detail };
+}
+
+function skillMasteryRank(level: number): number {
+  if (level < 150) return 0;
+  if (level < 200) return 1;
+  if (level < 300) return 2;
+  if (level < 400) return 3;
+  if (level < 500) return 4;
+  if (level < 750) return 5;
+  if (level < 1000) return 6;
+  return 7;
+}
+
+function spelunkingPageReadMax(account: ParsedAccount): number {
+  const spelunking = account.characters.reduce(
+    (max, character) => Math.max(max, character.skills.Spelunking ?? 0),
+    0
+  );
+  const mastery =
+    account.riftLevel >= SKILL_MASTERY_RIFT && skillMasteryRank(spelunking) > PAGE_READ_MASTERY_INDEX ? 1 : 0;
+  return PAGE_READ_BASE + PAGE_READ_MASTERY_BONUS * mastery;
 }
 
 export const DASHBOARD_ALERT_WORLDS = [
@@ -156,9 +182,14 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
       );
     }
   }
-  if (ops.dungeonTraitsUnpicked > 0) {
+  for (const section of ops.dungeonTraitsUnpicked) {
     alerts.push(
-      alert('General', 'dungeon-traits', "You haven't selected a dungeon trait", 'data/DungTraitB0')
+      alert(
+        'General',
+        `dungeon-trait-${section}`,
+        `You haven't selected a trait for ${section}`,
+        'data/DungTraitB0'
+      )
     );
   }
   if (ops.shopItemsLeft > 0) {
@@ -192,7 +223,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     );
   }
 
-  if (world >= 1 && ops.gildedStamps > 0) {
+  if (world >= 1 && ops.gildedStamps > 0 && account.riftLevel >= STAMP_MASTERY_RIFT) {
     alerts.push(
       alert(
         'World 1',
@@ -280,7 +311,8 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     }
     const killroyCap = ops.killroyThirdRoom ? 321 : 21;
     if (ops.killroyWeekProgress === 0 || (ops.killroyWeekProgress < killroyCap && world >= 4)) {
-      alerts.push(alert('World 2', 'killroy', "You haven't done a killroy this week", 'etc/Killroy'));
+      const classes = ops.killroyClasses.length > 0 ? ` (${ops.killroyClasses.join(', ')})` : '';
+      alerts.push(alert('World 2', 'killroy', `You haven't done a killroy this week${classes}`, 'etc/Killroy'));
     }
     if (ops.killroyUnder100.length > 0) {
       const names = ops.killroyUnder100.map((monster) => cleanLabel(monster.name)).join(', ');
@@ -335,7 +367,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         );
       }
     }
-    if (ops.vialAttempts > 0) {
+    if (ops.vialAttempts > 0 && ops.vialAttemptItemsReady) {
       alerts.push(alert('World 2', 'vial-attempts', 'You have available vial attempts', 'data/aVials1'));
     }
     for (const vial of ops.vialsReady) {
@@ -833,13 +865,14 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
   }
 
   if (world >= 7) {
-    if (ops.pageReadsToday < 5) {
-      const left = 5 - ops.pageReadsToday;
+    const pageReadMax = spelunkingPageReadMax(account);
+    if (ops.pageReadsToday < pageReadMax) {
+      const left = pageReadMax - ops.pageReadsToday;
       alerts.push(
         alert(
           'World 7',
           'page-reads',
-          `You have ${left} page read${left === 1 ? '' : 's'} available (${ops.pageReadsToday}/5)`,
+          `You have ${left} page read${left === 1 ? '' : 's'} available (${ops.pageReadsToday}/${pageReadMax})`,
           'data/Spelunking0'
         )
       );
