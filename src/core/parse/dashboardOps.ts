@@ -1,5 +1,7 @@
+import { KILLROY_ENEMY_LISTS, KILLROY_ENEMY_NAMES } from './alertCatalogs';
 import { parseDashboardExtras } from './dashboardExtras';
 import { asArray, asIndexedNumbers, asNumber, asRecord, forIndexed, numberToLetter, toList } from './helpers';
+import { lavaListIndex, lavaRandom1000 } from './lavaRand';
 import type { Character, DashboardOps } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
 
@@ -56,6 +58,54 @@ function miniBossKills(id: 'mini3b' | 'mini4b' | 'mini5a' | 'mini6a', daysSince:
   const wait = daysSince < 3 ? 3 : daysSince;
   if (id === 'mini3b') return Math.min(10, Math.floor(Math.pow(wait - 3, 0.55)));
   return Math.min(id === 'mini4b' ? 8 : 6, Math.floor(Math.pow(wait - 3, 0.5)));
+}
+
+function klaSlotDefined(data: Record<string, unknown>, characters: Character[], index: number): boolean {
+  for (const character of characters) {
+    const kla = toList(data[`KLA_${character.index}`]);
+    if (index >= kla.length) continue;
+    const value = kla[index];
+    if (value === undefined || value === null) continue;
+    if (Number.isFinite(asNumber(value, Number.NaN))) return true;
+  }
+  return false;
+}
+
+function killroyListForRoom(
+  random: number,
+  room: number,
+  unlockedLava: boolean,
+  unlockedSpirit: boolean
+): string[] {
+  if (random < 300 || room === 0) return KILLROY_ENEMY_LISTS[room] ?? [];
+  if (random < 400 && unlockedLava) return KILLROY_ENEMY_LISTS[4] ?? [];
+  if (random < 500 && unlockedSpirit) return KILLROY_ENEMY_LISTS[5] ?? [];
+  return KILLROY_ENEMY_LISTS[1 + room] ?? [];
+}
+
+function thisWeekKillroyMonsters(
+  data: Record<string, unknown>,
+  characters: Character[],
+  option: (index: number) => number,
+  globalTimeSec: number,
+  killroySwap: number
+): { name: string; rawName: string }[] {
+  const rooms = option(227) === 1 ? 3 : 2;
+  const timeAway = asRecord(data.TimeAway);
+  const shopRestock = asNumber(timeAway.ShopRestock);
+  const baseSeed = Math.floor((globalTimeSec + Math.round(shopRestock + 86400 * option(39))) / 604800);
+  const unlockedLava = klaSlotDefined(data, characters, 200);
+  const unlockedSpirit = (asIndexedNumbers(toList(data.Summon)[3])[2] ?? 0) >= 4;
+  const monsters: { name: string; rawName: string }[] = [];
+  for (let room = 0; room < rooms; room += 1) {
+    const seed = Math.round(baseSeed + (50 * room + killroySwap));
+    const random = lavaRandom1000(seed);
+    const list = killroyListForRoom(random, room, unlockedLava, unlockedSpirit);
+    const rawName = list[lavaListIndex(random, list.length)];
+    if (!rawName) continue;
+    monsters.push({ name: KILLROY_ENEMY_NAMES[rawName] ?? rawName, rawName });
+  }
+  return monsters;
 }
 
 export function parseDashboardOps(
@@ -276,6 +326,14 @@ export function parseDashboardOps(
   const owlNext = option(255);
   const owlRestartCostReady = option(253) > 0 && owlFeathers > 0 && (owlNext === 0 || option(259) > 0);
   const extras = parseDashboardExtras(data, characters, option, liquids, bundle.serverVars);
+  const krBest = asRecord(data.KRbest);
+  const killroyUnder100 = thisWeekKillroyMonsters(
+    data,
+    characters,
+    option,
+    globalTimeSec,
+    asNumber(bundle.serverVars?.KillroySwap)
+  ).filter((monster) => asNumber(krBest[monster.rawName]) < 100);
 
   return {
     option,
@@ -294,6 +352,7 @@ export function parseDashboardOps(
     killroyWeekProgress: option(113),
     killroyThirdRoom: option(227) === 1,
     killroySkulls: option(105),
+    killroyUnder100,
     weeklyBossDone: option(190) > 0,
     alternateParticles: option(135),
     islandAfkDays: option(160),

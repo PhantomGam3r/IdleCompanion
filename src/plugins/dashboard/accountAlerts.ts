@@ -282,6 +282,17 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.killroyWeekProgress === 0 || (ops.killroyWeekProgress < killroyCap && world >= 4)) {
       alerts.push(alert('World 2', 'killroy', "You haven't done a killroy this week", 'etc/Killroy'));
     }
+    if (ops.killroyUnder100.length > 0) {
+      const names = ops.killroyUnder100.map((monster) => cleanLabel(monster.name)).join(', ');
+      alerts.push(
+        alert(
+          'World 2',
+          'killroy-under-100',
+          `Killroy includes a monster with less than 100 kills (${names})`,
+          'etc/KillroyPrime'
+        )
+      );
+    }
     if (ops.killroySkulls > 0) {
       alerts.push(
         alert(

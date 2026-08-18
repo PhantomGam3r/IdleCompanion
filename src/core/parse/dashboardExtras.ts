@@ -39,7 +39,8 @@ import {
   type StampGoldInfo
 } from './alertCatalogs';
 import { CONSTRUCTION_BUILDINGS } from './catalogs';
-import { asIndexedNumbers, asNumber, countIndexedKeys, firstNumber, numberToLetter, toList } from './helpers';
+import { asIndexedNumbers, asNumber, asRecord, countIndexedKeys, firstNumber, numberToLetter, toList } from './helpers';
+import { labWeekRotation } from './lavaRand';
 import type { Character } from './types';
 
 export type NamedIcon = { name: string; rawName: string };
@@ -409,6 +410,21 @@ function remapLabRotationIndex(index: number, jadeBling: boolean): number {
     return Math.max(1, index - 10);
   }
   return index;
+}
+
+function chipRepoSlot(raw: unknown, slot: number): number | undefined {
+  const list = toList(raw);
+  if (slot < list.length && list[slot] !== undefined && list[slot] !== null) {
+    const value = asNumber(list[slot], Number.NaN);
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const rec = raw as Record<string, unknown>;
+    if (!(String(slot) in rec)) return undefined;
+    const value = asNumber(rec[String(slot)], Number.NaN);
+    return Number.isFinite(value) ? value : undefined;
+  }
+  return undefined;
 }
 
 function jadeBlingUnlocked(data: Record<string, unknown>): boolean {
@@ -940,35 +956,34 @@ export function parseDashboardExtras(
 
   const labChipsReady: NamedIcon[] = [];
   const labJewelsReady: NamedIcon[] = [];
-  const chipRepo = asIndexedNumbers(serverVars?.ChipRepo);
-  if (chipRepo.length > 0) {
-    const lab = toList(data.Lab);
-    const claimed = asIndexedNumbers(lab[13]);
-    const jewelAcquired = asIndexedNumbers(lab[14]);
-    const jadeBling = jadeBlingUnlocked(data);
-    for (let slot = 0; slot < 2; slot += 1) {
-      const rawIndex = chipRepo[slot] ?? -1;
-      if (rawIndex < 0) continue;
-      const chipIndex = remapLabRotationIndex(rawIndex, jadeBling);
-      const chip = LAB_CHIPS[chipIndex];
-      if (!chip) continue;
-      if (claimed.length > slot && chipIndex === claimed[slot]) continue;
-      if (!labReqsMet(chip, amounts)) continue;
-      labChipsReady.push({ name: chip.name, rawName: chip.rawName });
-    }
-    const rawJewelIndex = chipRepo[2] ?? -1;
-    if (rawJewelIndex >= 0) {
-      const jewelIndex = remapLabRotationIndex(rawJewelIndex, jadeBling);
-      const jewel = LAB_JEWELS[jewelIndex];
-      if (
-        jewel &&
-        !(claimed.length > 2 && jewelIndex === claimed[2]) &&
-        jewelAcquired[jewelIndex] !== 1 &&
-        labReqsMet(jewel, amounts)
-      ) {
-        labJewelsReady.push({ name: jewel.name, rawName: jewel.rawName });
-      }
-    }
+  const weekSeed = Math.floor(asNumber(asRecord(data.TimeAway).GlobalTime) / 604800);
+  const rotation = labWeekRotation(weekSeed, LAB_CHIPS.length, LAB_JEWELS.length);
+  const jadeBling = jadeBlingUnlocked(data);
+  for (let slot = 0; slot < 3; slot += 1) {
+    const repo = chipRepoSlot(serverVars?.ChipRepo, slot);
+    if (repo !== undefined && repo >= 0) rotation[slot] = repo;
+    rotation[slot] = remapLabRotationIndex(rotation[slot], jadeBling);
+  }
+  const lab = toList(data.Lab);
+  const claimed = asIndexedNumbers(lab[13]);
+  const jewelAcquired = asIndexedNumbers(lab[14]);
+  for (let slot = 0; slot < 2; slot += 1) {
+    const chipIndex = rotation[slot] ?? -1;
+    const chip = LAB_CHIPS[chipIndex];
+    if (!chip) continue;
+    if (claimed.length > slot && chipIndex === claimed[slot]) continue;
+    if (!labReqsMet(chip, amounts)) continue;
+    labChipsReady.push({ name: chip.name, rawName: chip.rawName });
+  }
+  const jewelIndex = rotation[2] ?? -1;
+  const jewel = LAB_JEWELS[jewelIndex];
+  if (
+    jewel &&
+    !(claimed.length > 2 && jewelIndex === claimed[2]) &&
+    jewelAcquired[jewelIndex] !== 1 &&
+    labReqsMet(jewel, amounts)
+  ) {
+    labJewelsReady.push({ name: jewel.name, rawName: jewel.rawName });
   }
 
   let buttonTaskReady = false;
