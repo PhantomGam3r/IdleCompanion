@@ -3,8 +3,12 @@ import { fromImportedJson } from '../../core/idleon/loadSave';
 import { parseSave } from '../../core/parse/parseSave';
 import { collectAccountAlerts } from './accountAlerts';
 
-function accountFrom(data: Record<string, unknown>, charNames = ['A']) {
-  return parseSave(fromImportedJson({ charNames, data }));
+function accountFrom(
+  data: Record<string, unknown>,
+  charNames = ['A'],
+  serverVars?: Record<string, unknown>
+) {
+  return parseSave(fromImportedJson({ charNames, data, serverVars }));
 }
 
 describe('collectAccountAlerts', () => {
@@ -140,5 +144,103 @@ describe('collectAccountAlerts', () => {
     const ids = collectAccountAlerts(account).map((item) => item.id);
     expect(ids).toContain('building-0');
     expect(ids).toContain('hole-motherlode');
+  });
+
+  it('flags unmaxed arcade rotation upgrades from server vars', () => {
+    const arcade = Array.from({ length: 5 }, () => 100);
+    arcade[0] = 40;
+    const account = accountFrom(
+      {
+        CharacterClass_0: 1,
+        CurrentMap_0: 60,
+        Lv0_0: [40, 0, 0, 0, 0, 20],
+        ArcadeUpg: arcade
+      },
+      ['A'],
+      { ArcadeBonuses: [0, 1] }
+    );
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('arcade-rot-0');
+    expect(ids).not.toContain('arcade-rot-1');
+  });
+
+  it('flags printer samples at the atom collider storage cap', () => {
+    const print: unknown[] = Array.from({ length: 19 }, () => 0);
+    print[15] = 'Copper';
+    print[16] = 16e6;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 100,
+      Lv0_0: [40, 0, 0, 0, 0, 20, 0, 0, 10],
+      Print: print,
+      OptLacc: Object.assign([], { 133: 0 })
+    });
+    expect(collectAccountAlerts(account).some((item) => item.id === 'printer-Copper')).toBe(true);
+  });
+
+  it('flags a full ribbon shelf, cooking mastery points, and gaming clicks', () => {
+    const lastClick = Math.floor(Date.now() / 1000) - 2 * 3600;
+    const sprouts = Array.from({ length: 28 }, () => [0, 0, 0, 0]);
+    for (let slot = 0; slot < 8; slot += 1) sprouts[slot] = [0, 1, 0, 0];
+    sprouts[26] = [1, lastClick, 0, 0];
+    sprouts[27] = [1, lastClick, 0, 0];
+    const gaming = Array.from({ length: 15 }, () => 0);
+    gaming[3] = 5;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 210,
+      Lv0_0: [80, 0, 0, 0, 0, 20, 0, 0, 20, 0, 15],
+      Ribbon: Array.from({ length: 28 }, () => 2),
+      CookMaster: [[0, 0], [4, 0], [0, 0, 0, 0, 0, 0]],
+      Gaming: gaming,
+      GamingSprout: sprouts
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('ribbons');
+    expect(ids).toContain('cook-mastery-yellow');
+    expect(ids).toContain('cook-mastery-purple');
+    expect(ids).toContain('gaming-sprouts');
+    expect(ids).toContain('gaming-shovel');
+    expect(ids).toContain('gaming-squirrel');
+  });
+
+  it('flags world 7 stamina, legend, sushi knowledge, and insight alerts', () => {
+    const levels = Array.from({ length: 20 }, () => 0);
+    levels[0] = 600;
+    levels[19] = 1;
+    const legend = Array.from({ length: 50 }, () => 0);
+    legend[23] = 1;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 310,
+      Lv0_0: levels,
+      Spelunk: Object.assign([], {
+        3: [20],
+        4: [0, 2],
+        18: legend,
+        45: Object.assign([], { 3: 0 })
+      }),
+      Gaming: Object.assign([], { 12: 'H' }),
+      Sushi: Object.assign([], {
+        5: [0],
+        6: [10],
+        7: [0]
+      }),
+      Research: Object.assign([], {
+        2: [1],
+        4: [4],
+        5: [0, 0, 0, 1]
+      }),
+      OptLacc: Object.assign([], { 414: 0, 480: 0, 486: 20 })
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('full-stamina');
+    expect(ids).toContain('overstim');
+    expect(ids).toContain('legend-points');
+    expect(ids).toContain('masterclass-cheap');
+    expect(ids).toContain('jeweled-cogs');
+    expect(ids).toContain('double-cluster');
+    expect(ids).toContain('sushi-kn-0');
+    expect(ids).toContain('research-insight');
   });
 });
