@@ -182,6 +182,7 @@ export function parseDashboardOps(
 
   const timeAway = asRecord(data.TimeAway);
   const globalTimeSec = asNumber(timeAway.GlobalTime);
+  const shopRestock = asNumber(timeAway.ShopRestock);
 
   const cauldron = toList(data.CauldronInfo);
   const multiplier = asIndexedNumbers(cauldron[10]);
@@ -469,6 +470,11 @@ export function parseDashboardOps(
     owlFeathers,
     owlRestartCostReady,
     owlMegaRestartCostReady: option(253) > 0 && owlNext === 0 && owlFeathers > 0,
+    shopRestockSec: shopRestock,
+    printerTimeSec: asNumber(timeAway.Printer),
+    companionLastClaimMs: lastFreeClaim,
+    happyHours: toList(bundle.serverVars?.HappyHours).map((value) => asNumber(value)),
+    randEventHr: asNumber(bundle.serverVars?.RandEvntHr),
     ...extras
   };
 }

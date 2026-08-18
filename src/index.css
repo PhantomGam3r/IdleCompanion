@@ -283,6 +283,7 @@ input, textarea {
 }
 .alert-chip strong { font-size: 0.85rem; }
 .alert-chip p { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.alert-chip-ready { border-color: #c9a227; }
 
 @media (max-width: 720px) {
   .nav { flex-wrap: wrap; }
