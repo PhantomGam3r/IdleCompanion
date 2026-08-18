@@ -1028,3 +1028,25 @@ export const KILLROY_ENEMY_NAMES: Record<string, string> = {
   w6d3: "Samurai_Guardian"
 };
 
+export const DUNGEON_TRAITS: { section: string; levelReq: number; bonusCount: number }[] = [
+  { section: "Beginner Traits", levelReq: 5, bonusCount: 3 },
+  { section: "Kinda Cool Traits", levelReq: 10, bonusCount: 3 },
+  { section: "Strategery Traits", levelReq: 15, bonusCount: 4 },
+  { section: "Da Cred Traits", levelReq: 20, bonusCount: 2 },
+  { section: "Drop Drip Traits", levelReq: 25, bonusCount: 4 },
+  { section: "Cash Money Traits", levelReq: 30, bonusCount: 3 },
+  { section: "ChOiIiCe Traits", levelReq: 35, bonusCount: 3 },
+  { section: "Royale Traits", levelReq: 40, bonusCount: 2 },
+  { section: "Endothelium Traits", levelReq: 50, bonusCount: 4 }
+];
+
+/** randomList[29] dungeon rank XP thresholds. Rank is 1 + last index where progress > req. */
+export const DUNGEON_RANK_REQS: number[] = [
+  0, 4, 10, 18, 28, 40, 70, 110, 160, 230, 320, 470, 670, 940, 1310, 1760, 2400, 3250, 4000, 5000, 6160, 8000, 10000,
+  12500, 15000, 18400, 21000, 25500, 30500, 36500, 45400, 52000, 61000, 72500, 85000, 110000, 125000, 145000, 170000,
+  200000, 250000, 275000, 325000, 400000, 490000, 600000, 725000, 875000, 1000000, 1200000, 1500000, 3000000, 5000000,
+  10000000, 20000000, 30000000, 40000000, 50000000, 60000000, 80000000, 100000000, 120000000, 150000000, 200000000,
+  250000000, 300000000, 400000000, 500000000, 600000000, 800000000, 1000000000, 1200000000, 1400000000, 1600000000,
+  1800000000, 2000000000
+];
+
