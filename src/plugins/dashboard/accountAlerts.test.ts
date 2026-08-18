@@ -243,4 +243,84 @@ describe('collectAccountAlerts', () => {
     expect(ids).toContain('sushi-kn-0');
     expect(ids).toContain('research-insight');
   });
+
+  it('flags fence shinies, breedability, and ChipRepo lab claims', () => {
+    const account = accountFrom(
+      {
+        CharacterClass_0: 1,
+        CurrentMap_0: 150,
+        Lv0_0: [50, 0, 0, 0, 0, 20, 0, 0, 20, 0, 15],
+        Pets: [
+          ['mushG', 5],
+          ['frogG', 4]
+        ],
+        Breeding: Object.assign([], {
+          2: [0, 0, 1, 0, 0],
+          13: Object.assign([], { 1: 1e15 }),
+          22: Object.assign([], { 0: 100 })
+        }),
+        Lab: Object.assign([], {
+          13: [-1, -1, -1],
+          14: [0]
+        }),
+        ChestOrder: ['Copper'],
+        ChestQuantity: [30_000],
+        Meals: [[1], [], [101], [101]]
+      },
+      ['A'],
+      { ChipRepo: [0, -1, -1] }
+    );
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('shiny-mushG');
+    expect(ids).toContain('breed-frogG');
+    expect(ids).toContain('lab-chip-ConsoleChip0');
+    expect(ids).not.toContain('lab-jewel-ConsoleJwl0');
+  });
+
+  it('skips lab ChipRepo claims that are already claimed or missing materials', () => {
+    const account = accountFrom(
+      {
+        CharacterClass_0: 1,
+        CurrentMap_0: 150,
+        Lv0_0: [50, 0, 0, 0, 0, 20, 0, 0, 20, 0, 15],
+        Lab: Object.assign([], {
+          13: [0, -1, -1],
+          14: [0]
+        }),
+        ChestOrder: ['Copper'],
+        ChestQuantity: [30_000],
+        Meals: [[1], [], [101], [101]]
+      },
+      ['A'],
+      { ChipRepo: [0, -1, -1] }
+    );
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).not.toContain('lab-chip-ConsoleChip0');
+  });
+
+  it('flags a ready button task instead of insta-skips', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 310,
+      Lv0_0: Array.from({ length: 20 }, (_, index) => (index === 0 ? 50 : 0)),
+      Cards1: Array.from({ length: 500 }, (_, index) => `Item${index}`),
+      OptLacc: Object.assign([], { 594: 0, 595: 3 })
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('button-task');
+    expect(ids).not.toContain('button-skips');
+  });
+
+  it('flags button insta-skips only when the current task is not ready', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 310,
+      Lv0_0: Array.from({ length: 20 }, (_, index) => (index === 0 ? 50 : 0)),
+      OptLacc: Object.assign([], { 594: 0, 595: 2 })
+    });
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'button-skips');
+    expect(alert).toBeTruthy();
+    expect(alert?.title).toMatch(/can be skipped/);
+    expect(collectAccountAlerts(account).some((item) => item.id === 'button-task')).toBe(false);
+  });
 });
