@@ -17,6 +17,8 @@ const GAMING_HOURS_THRESHOLD = 1;
 const STAMINA_CHAR_THRESHOLD = 1;
 const OVERSTIM_THRESHOLD = 1;
 const INSIGHT_THRESHOLD = 3;
+const SHINY_LEVEL_THRESHOLD = 5;
+const BREEDABILITY_LEVEL_THRESHOLD = 5;
 
 function cleanLabel(value: string): string {
   return value.replace(/[{}]/g, '').replace(/_/g, ' ');
@@ -471,6 +473,48 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.breedingEggs.length >= 15 && eggsFilled === 15) {
       alerts.push(alert('World 4', 'eggs', 'Eggs are at full capacity', 'data/PetEgg1'));
     }
+    for (const pet of ops.shinyPets) {
+      const reached =
+        pet.shinyLevel === 20 ? 'level 20 (max)' : `the shiny threshold (${SHINY_LEVEL_THRESHOLD})`;
+      alerts.push(
+        alert(
+          'World 4',
+          `shiny-${pet.rawName}`,
+          `${cleanLabel(pet.name)} has reached ${reached}`,
+          `afk_targets/${pet.rawName}`
+        )
+      );
+    }
+    for (const pet of ops.breedabilityPets) {
+      alerts.push(
+        alert(
+          'World 4',
+          `breed-${pet.rawName}`,
+          `${cleanLabel(pet.name)} has surpassed the breedability level threshold (${BREEDABILITY_LEVEL_THRESHOLD})`,
+          `afk_targets/${pet.rawName}`
+        )
+      );
+    }
+    for (const chip of ops.labChipsReady) {
+      alerts.push(
+        alert(
+          'World 4',
+          `lab-chip-${chip.rawName}`,
+          `You can claim ${cleanLabel(chip.name)} in chip repository`,
+          `data/${chip.rawName}`
+        )
+      );
+    }
+    for (const jewel of ops.labJewelsReady) {
+      alerts.push(
+        alert(
+          'World 4',
+          `lab-jewel-${jewel.rawName}`,
+          `You can claim ${cleanLabel(jewel.name)} in jewel repository`,
+          `data/${jewel.rawName}`
+        )
+      );
+    }
     for (const meal of ops.mealsReady) {
       alerts.push(
         alert(
@@ -883,13 +927,25 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
-    if (ops.buttonSkips > 0) {
+    if (ops.buttonSkips > 0 && !ops.buttonTaskReady) {
       alerts.push(
         alert(
           'World 7',
           'button-skips',
-          `${ops.buttonSkips} insta-skip${ops.buttonSkips === 1 ? '' : 's'} available`,
-          'etc/ButtonG'
+          `${ops.buttonSkips} insta-skip${ops.buttonSkips === 1 ? '' : 's'} available - current task can be skipped`,
+          'etc/ButtonG',
+          ops.buttonTaskDescription || undefined
+        )
+      );
+    }
+    if (ops.buttonTaskReady) {
+      alerts.push(
+        alert(
+          'World 7',
+          'button-task',
+          'Button task ready - no insta-skip needed',
+          'etc/ButtonG',
+          ops.buttonTaskDescription || undefined
         )
       );
     }

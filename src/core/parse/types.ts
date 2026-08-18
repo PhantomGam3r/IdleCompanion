@@ -316,6 +316,12 @@ export type DashboardOps = {
   jeweledCogsUnlocked: boolean;
   sushiKnowledgeReady: { name: string; index: number; level: number }[];
   insightObservations: { name: string; index: number; insightLevel: number }[];
+  shinyPets: { name: string; rawName: string; shinyLevel: number }[];
+  breedabilityPets: { name: string; rawName: string; breedingLevel: number }[];
+  labChipsReady: { name: string; rawName: string }[];
+  labJewelsReady: { name: string; rawName: string }[];
+  buttonTaskReady: boolean;
+  buttonTaskDescription: string;
 };
 
 export type DashboardAlert = {

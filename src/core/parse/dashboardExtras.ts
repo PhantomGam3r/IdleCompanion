@@ -1,5 +1,7 @@
 import {
   ARCADE_EFFECTS,
+  BUTTON_PERM,
+  BUTTON_TASKS,
   BUILD_COST_MULTIPLIER,
   DEFAULT_MEAL_MAX_LEVEL,
   DOUBLE_CLUSTER_INDEX,
@@ -7,6 +9,8 @@ import {
   DOUBLE_CLUSTER_X1,
   DOUBLE_CLUSTER_X2,
   JEWEL_COGS_SUPERBIT_INDEX,
+  LAB_CHIPS,
+  LAB_JEWELS,
   LEGEND_COG_TALENT_INDEX,
   LEGEND_COG_TALENT_X2,
   LEGEND_MASTERCLASS_TALENT_INDEX,
@@ -15,6 +19,7 @@ import {
   MAX_VIAL_LEVEL,
   MEAL_INFO,
   NAMETAGS,
+  PET_RAW_NAMES,
   POPPY_UPGRADES,
   PREMIUM_HATS,
   REFINERY_POWER_CAPS,
@@ -29,11 +34,12 @@ import {
   VIAL_COSTS,
   VIAL_INFO,
   VILLAGER_NAMES,
+  type LabItemInfo,
   type NamedRaw,
   type StampGoldInfo
 } from './alertCatalogs';
 import { CONSTRUCTION_BUILDINGS } from './catalogs';
-import { asIndexedNumbers, asNumber, numberToLetter, toList } from './helpers';
+import { asIndexedNumbers, asNumber, countIndexedKeys, firstNumber, numberToLetter, toList } from './helpers';
 import type { Character } from './types';
 
 export type NamedIcon = { name: string; rawName: string };
@@ -100,6 +106,12 @@ export type DashboardExtras = {
   jeweledCogsUnlocked: boolean;
   sushiKnowledgeReady: { name: string; index: number; level: number }[];
   insightObservations: { name: string; index: number; insightLevel: number }[];
+  shinyPets: { name: string; rawName: string; shinyLevel: number }[];
+  breedabilityPets: { name: string; rawName: string; breedingLevel: number }[];
+  labChipsReady: NamedIcon[];
+  labJewelsReady: NamedIcon[];
+  buttonTaskReady: boolean;
+  buttonTaskDescription: string;
 };
 
 const STAMP_SPEND_PERCENT = 25;
@@ -109,6 +121,8 @@ const HOLE_HARP_POWER = 100;
 const HOLE_JAR_THRESHOLD = 120;
 const STAMP_REDUCER_THRESHOLD = 90;
 const GREEN_STACK = 1e7;
+const SHINY_LEVEL_THRESHOLD = 5;
+const BREEDABILITY_LEVEL_THRESHOLD = 5;
 
 function visitStrings(value: unknown, visit: (item: string) => void): void {
   if (typeof value === 'string') {
@@ -342,6 +356,193 @@ function observationLensTypes(raw: unknown, observationIndex: number): number[] 
   return types;
 }
 
+function shinyLevelFromProgress(progress: number): number {
+  if (progress === 0) return 0;
+  let level = 0;
+  for (let index = 0; index < 19; index += 1) {
+    const goal = Math.floor((1 + Math.pow(index + 1, 1.6)) * Math.pow(1.7, index + 1));
+    if (progress > goal) level = index + 2;
+  }
+  return level === 0 ? 1 : level;
+}
+
+function breedabilityLevel(progress: number, unlocked: boolean): number {
+  if (!unlocked) return 1;
+  const second = 1 + Math.log(Math.max(1, Math.pow(progress + 1, 0.725)));
+  return Math.min(9, Math.floor(Math.pow(second - 1, 0.8)) + 1);
+}
+
+function buttonRequirement(
+  scaling: 'linear' | 'step' | 'exponent',
+  base: number,
+  factor: number,
+  presses: number
+): number {
+  if (scaling === 'linear') return Math.ceil(base + presses * factor);
+  if (scaling === 'step') return Math.ceil(base + presses / factor);
+  if (scaling === 'exponent') return base * Math.pow(factor, presses);
+  return base;
+}
+
+function highestSkill(characters: Character[], skill: string): number {
+  return characters.reduce((max, character) => Math.max(max, character.skills[skill] ?? 0), 0);
+}
+
+function highestStatueLevel(data: Record<string, unknown>, characterCount: number, statueIndex: number): number {
+  let best = 0;
+  for (let index = 0; index < characterCount; index += 1) {
+    const rows = toList(data[`StatueLevels_${index}`]);
+    best = Math.max(best, asIndexedNumbers(rows[statueIndex])[0] ?? 0);
+  }
+  return best;
+}
+
+function labReqsMet(item: LabItemInfo, amounts: Map<string, number>): boolean {
+  return item.req.every((req) => {
+    const owned = amounts.get(req.rawName) ?? amounts.get(req.name ?? '') ?? 0;
+    return owned > req.amount;
+  });
+}
+
+function remapLabRotationIndex(index: number, jadeBling: boolean): number {
+  if ((index >= 21 && index <= 23) || (index >= 18 && index <= 20 && !jadeBling)) {
+    return Math.max(1, index - 10);
+  }
+  return index;
+}
+
+function jadeBlingUnlocked(data: Record<string, unknown>): boolean {
+  const extra = toList(toList(data.Ninja)[102]);
+  const letters = typeof extra[9] === 'string' ? extra[9] : '';
+  return letters.includes(numberToLetter(37));
+}
+
+function formatButtonTask(description: string, requirement: number): string {
+  const formatted = !Number.isFinite(requirement)
+    ? '∞'
+    : requirement >= 1e15
+      ? requirement.toExponential(2)
+      : Math.floor(requirement).toLocaleString('en-US');
+  return description.replace(/_/g, ' ').split('{').join(formatted).trim();
+}
+
+function buttonTaskProgress(
+  taskIndex: number,
+  data: Record<string, unknown>,
+  option: (index: number) => number,
+  characters: Character[],
+  rawMoney: number,
+  stampLevels: number[][],
+  mealLevels: number[]
+): number {
+  const characterCount = Math.max(characters.length, 1);
+  switch (taskIndex) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 15:
+    case 16:
+    case 21:
+    case 26:
+    case 29:
+    case 38:
+    case 41:
+    case 46:
+    case 47:
+    case 49:
+    case 50:
+    case 56:
+      return 0;
+    case 4:
+      return option(330);
+    case 5:
+      return option(358);
+    case 6:
+      return option(390);
+    case 7:
+      return option(391);
+    case 8:
+      return highestStatueLevel(data, characterCount, 29);
+    case 9:
+      return highestStatueLevel(data, characterCount, 2);
+    case 10:
+      return highestStatueLevel(data, characterCount, 6);
+    case 11:
+      return highestStatueLevel(data, characterCount, 8);
+    case 12:
+      return highestStatueLevel(data, characterCount, 9);
+    case 13:
+      return highestStatueLevel(data, characterCount, 15);
+    case 14:
+      return highestStatueLevel(data, characterCount, 16);
+    case 17:
+      return stampLevels[2]?.[2] ?? 0;
+    case 18:
+      return asIndexedNumbers(toList(data.CauldronInfo)[0])[0] ?? 0;
+    case 19:
+      return asIndexedNumbers(toList(data.CauldronInfo)[1])[0] ?? 0;
+    case 20:
+      return asIndexedNumbers(toList(data.CauldronInfo)[2])[0] ?? 0;
+    case 22:
+      return printerProduction(data, characterCount).get('Copper') ?? 0;
+    case 23:
+      return option(253);
+    case 24:
+      return asIndexedNumbers(toList(data.TotemInfo)[0]).reduce((sum, waves) => sum + waves, 0);
+    case 25: {
+      const stored = toList(toList(data.PetsStored)[0]);
+      return asNumber(stored[2]);
+    }
+    case 27:
+      return asIndexedNumbers(data.Ribbon)[92] ?? 0;
+    case 28:
+      return mealLevels[56] ?? 0;
+    case 30:
+      return highestSkill(characters, 'Laboratory');
+    case 31:
+      return highestSkill(characters, 'Sneaking');
+    case 32:
+      return highestSkill(characters, 'Spelunking');
+    case 33:
+      return highestSkill(characters, 'Mining');
+    case 34:
+      return highestSkill(characters, 'Chopping');
+    case 35:
+      return highestSkill(characters, 'Divinity');
+    case 36:
+      return asNumber(toList(data.Divinity)[24]);
+    case 37:
+      return asNumber(toList(toList(data.Sailing)[1])[0]);
+    case 39:
+      return firstNumber(toList(data.Gaming)[0]);
+    case 40:
+      return asNumber(toList(toList(data.GamingSprout)[28])[1]);
+    case 42:
+      return toList(data.Cards1).filter((item) => typeof item === 'string' && item && item !== 'Blank').length;
+    case 43:
+      return asIndexedNumbers(toList(data.Summon)[2])[0] ?? 0;
+    case 44:
+      return toList(toList(data.Summon)[1]).filter((id) => typeof id === 'string' && id && id !== 'Blank').length;
+    case 45:
+      return option(221);
+    case 48:
+      return countIndexedKeys(data.FarmCrop);
+    case 51:
+      return asIndexedNumbers(toList(data.Spelunk)[1])[4] ?? 0;
+    case 52:
+      return rawMoney;
+    case 53:
+      return option(369) + 1;
+    case 54:
+      return asIndexedNumbers(toList(data.Sushi)[4])[3] ?? 0;
+    case 55:
+      return option(267);
+    default:
+      return taskIndex >= 57 ? 1 : 0;
+  }
+}
+
 export function parseDashboardExtras(
   data: Record<string, unknown>,
   characters: Character[],
@@ -400,6 +601,15 @@ export function parseDashboardExtras(
   const mealsRaw = toList(data.Meals);
   const mealLevels = asIndexedNumbers(mealsRaw[0]);
   const mealAmounts = asIndexedNumbers(mealsRaw[2]);
+  MEAL_INFO.forEach((meal, index) => {
+    const qty = mealAmounts[index] ?? 0;
+    amounts.set(meal.name, qty);
+    amounts.set(meal.rawName, qty);
+    amounts.set(`CookingM${index}`, qty);
+  });
+  asIndexedNumbers(mealsRaw[3]).forEach((qty, index) => {
+    amounts.set(`CookingSpice${index}`, qty);
+  });
   const mealsReady: NamedIcon[] = [];
   MEAL_INFO.forEach((meal, index) => {
     const level = mealLevels[index] ?? 0;
@@ -693,6 +903,97 @@ export function parseDashboardExtras(
     if (insightLevel >= 3) insightObservations.push({ name, index, insightLevel });
   });
 
+  const shinyPets: { name: string; rawName: string; shinyLevel: number }[] = [];
+  const breedabilityPets: { name: string; rawName: string; breedingLevel: number }[] = [];
+  const breeding = toList(data.Breeding);
+  const petUpgrades = asIndexedNumbers(breeding[2]);
+  const fenceSlots = Math.max(0, Math.round(5 + (petUpgrades[4] ?? 0) + 2 * (gemShop[125] ?? 0)));
+  const fenceShiny = new Set<string>();
+  const fenceBreed = new Set<string>();
+  for (const pet of toList(data.Pets).slice(0, fenceSlots)) {
+    const row = Array.isArray(pet) ? pet : toList(pet);
+    const name = String(row[0] ?? '');
+    const type = asNumber(row[1]);
+    if (!name) continue;
+    if (type === 5) fenceShiny.add(name);
+    if (type === 4) fenceBreed.add(name);
+  }
+  const breedabilityUnlocked = (petUpgrades[2] ?? 0) > 0;
+  PET_RAW_NAMES.forEach((worldPets, worldIndex) => {
+    const shinyRow = asIndexedNumbers(breeding[22 + worldIndex]);
+    const breedRow = asIndexedNumbers(breeding[13 + worldIndex]);
+    worldPets.forEach((rawName, petIndex) => {
+      if (fenceShiny.has(rawName)) {
+        const shinyLevel = shinyLevelFromProgress(shinyRow[petIndex] ?? 0);
+        if (shinyLevel >= SHINY_LEVEL_THRESHOLD) {
+          shinyPets.push({ name: rawName, rawName, shinyLevel });
+        }
+      }
+      if (breedabilityUnlocked && fenceBreed.has(rawName)) {
+        const breedingLevel = breedabilityLevel(breedRow[petIndex] ?? 0, breedabilityUnlocked);
+        if (breedingLevel >= BREEDABILITY_LEVEL_THRESHOLD) {
+          breedabilityPets.push({ name: rawName, rawName, breedingLevel });
+        }
+      }
+    });
+  });
+
+  const labChipsReady: NamedIcon[] = [];
+  const labJewelsReady: NamedIcon[] = [];
+  const chipRepo = asIndexedNumbers(serverVars?.ChipRepo);
+  if (chipRepo.length > 0) {
+    const lab = toList(data.Lab);
+    const claimed = asIndexedNumbers(lab[13]);
+    const jewelAcquired = asIndexedNumbers(lab[14]);
+    const jadeBling = jadeBlingUnlocked(data);
+    for (let slot = 0; slot < 2; slot += 1) {
+      const rawIndex = chipRepo[slot] ?? -1;
+      if (rawIndex < 0) continue;
+      const chipIndex = remapLabRotationIndex(rawIndex, jadeBling);
+      const chip = LAB_CHIPS[chipIndex];
+      if (!chip) continue;
+      if (claimed.length > slot && chipIndex === claimed[slot]) continue;
+      if (!labReqsMet(chip, amounts)) continue;
+      labChipsReady.push({ name: chip.name, rawName: chip.rawName });
+    }
+    const rawJewelIndex = chipRepo[2] ?? -1;
+    if (rawJewelIndex >= 0) {
+      const jewelIndex = remapLabRotationIndex(rawJewelIndex, jadeBling);
+      const jewel = LAB_JEWELS[jewelIndex];
+      if (
+        jewel &&
+        !(claimed.length > 2 && jewelIndex === claimed[2]) &&
+        jewelAcquired[jewelIndex] !== 1 &&
+        labReqsMet(jewel, amounts)
+      ) {
+        labJewelsReady.push({ name: jewel.name, rawName: jewel.rawName });
+      }
+    }
+  }
+
+  let buttonTaskReady = false;
+  let buttonTaskDescription = '';
+  if (BUTTON_PERM.length > 0 && BUTTON_TASKS.length > 0) {
+    const presses = Math.floor(option(594));
+    const perm = BUTTON_PERM[presses % BUTTON_PERM.length] ?? 0;
+    const taskIndex = perm % BUTTON_TASKS.length;
+    const task = BUTTON_TASKS[taskIndex];
+    if (task) {
+      const requirement = buttonRequirement(task.scaling, task.base, task.factor, presses);
+      const progress = buttonTaskProgress(
+        taskIndex,
+        data,
+        option,
+        characters,
+        rawMoney,
+        stampLevels,
+        mealLevels
+      );
+      buttonTaskReady = progress >= requirement;
+      buttonTaskDescription = formatButtonTask(task.description, requirement);
+    }
+  }
+
   return {
     affordableStampCount,
     affordableStampPercent: rawMoney > 0 ? Math.ceil((stampTotal / rawMoney) * 100) : 0,
@@ -753,7 +1054,13 @@ export function parseDashboardExtras(
     jeweledCogMax,
     jeweledCogsUnlocked,
     sushiKnowledgeReady,
-    insightObservations
+    insightObservations,
+    shinyPets,
+    breedabilityPets,
+    labChipsReady,
+    labJewelsReady,
+    buttonTaskReady,
+    buttonTaskDescription
   };
 }
 
