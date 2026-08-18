@@ -228,8 +228,13 @@ export type DashboardOps = {
   sneakingLastLootedSec: number;
   sneakingCharmRolls: number;
   farmEmptyPlots: number;
-  farmHighOgPlots: number;
+  farmOgPlots: number;
   farmCropsOnPlots: number;
+  summonFamiliarLevel: number;
+  summonFamiliarMax: number;
+  exoticPurchased: number;
+  exoticMaxPurchases: number;
+  exoticUnlocked: boolean;
   emperorAttempts: number;
   pageReadsToday: number;
   mineheadTriesLeft: number;

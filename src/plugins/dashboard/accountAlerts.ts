@@ -19,6 +19,8 @@ const OVERSTIM_THRESHOLD = 1;
 const INSIGHT_THRESHOLD = 3;
 const SHINY_LEVEL_THRESHOLD = 5;
 const BREEDABILITY_LEVEL_THRESHOLD = 5;
+const FAMILIAR_LEVEL_THRESHOLD = 10;
+const FARM_OG_THRESHOLD = 0;
 
 function cleanLabel(value: string): string {
   return value.replace(/[{}]/g, '').replace(/_/g, ' ');
@@ -745,6 +747,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
+    if (ops.summonFamiliarLevel < ops.summonFamiliarMax && ops.summonFamiliarLevel < FAMILIAR_LEVEL_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 6',
+          'summon-familiar',
+          `Summoning familiar bonus isn't maxed (${ops.summonFamiliarLevel}/${ops.summonFamiliarMax})`,
+          'data/SumUpgIc2'
+        )
+      );
+    }
     if (ops.farmEmptyPlots > 0) {
       alerts.push(
         alert(
@@ -755,12 +767,13 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
-    if (ops.farmHighOgPlots > 0) {
+    if (ops.farmOgPlots > 0) {
+      const ogMulti = Math.min(1e9, Math.max(1, Math.pow(2, FARM_OG_THRESHOLD)));
       alerts.push(
         alert(
           'World 6',
           'farm-og',
-          `${ops.farmHighOgPlots} plots reached 4+ OGs`,
+          `${ops.farmOgPlots} plots reached the threshold of ${FARM_OG_THRESHOLD} OGs (x${ogMulti})`,
           'data/ClassIcons57'
         )
       );
@@ -772,6 +785,17 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
           'farm-crops',
           `You have ${formatCount(ops.farmCropsOnPlots)} crops ready to be collected`,
           'data/FarmPlant6'
+        )
+      );
+    }
+    if (ops.exoticUnlocked && ops.exoticPurchased < ops.exoticMaxPurchases) {
+      const available = ops.exoticMaxPurchases - ops.exoticPurchased;
+      alerts.push(
+        alert(
+          'World 6',
+          'exotic-purchases',
+          `You have ${available} exotic purchase${available === 1 ? '' : 's'} available (${ops.exoticPurchased}/${ops.exoticMaxPurchases})`,
+          'data/FarmStT3'
         )
       );
     }
