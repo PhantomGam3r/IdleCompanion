@@ -26,6 +26,7 @@ import type {
   BribeSummary,
   BubbleColor,
   Character,
+  CharacterOps,
   DeathNoteSummary,
   ForgeSummary,
   NamedLevel,
@@ -36,6 +37,7 @@ import type {
 } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
 import { parseDashboardOps } from './dashboardOps';
+import { parseCharacterOps } from './characterDashboard';
 
 export const CLASS_NAMES = [
   'Unknown',
@@ -783,7 +785,7 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const world = highestWorld(characters);
   const ops = parseDashboardOps(data, bundle, characters, world);
 
-  return {
+  const account: ParsedAccount = {
     names: characters.map((c) => c.name),
     characters,
     highestWorld: world,
@@ -914,7 +916,10 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     armorSetsUnlocked: armor.sets,
     armorSmithyDays: armor.days,
     ops,
+    characterOps: [] as CharacterOps[],
     source: bundle.source,
     raw: data
   };
+  account.characterOps = parseCharacterOps(data, account);
+  return account;
 }

@@ -13,6 +13,68 @@ export type Character = {
   postOfficeBoxes: { name: string; level: number }[];
 };
 
+export type AnvilOverdueSlot = { name: string; rawName: string; minutesUntilCap: number };
+export type CrystalCountdownSkill = { skill: string; icon: string; reduction: number; max: number };
+export type ToolUpgrade = { rawName: string; displayName: string };
+export type UpgradeSlotItem = { rawName: string; displayName: string; slots: number };
+export type ReadyTalent = { talentId: number; name: string };
+export type ItemStat = {
+  rawName: string;
+  weaponPower: number;
+  uq1: number;
+  uq2: number;
+  uq1txt: string;
+  upgradeSlots: number;
+  type: string;
+  premium: boolean;
+};
+
+export type CharacterOps = {
+  index: number;
+  afkTarget: string;
+  afkKind: 'fighting' | 'skilling' | 'nothing';
+  afkHours: number;
+  anvilAvailablePoints: number;
+  anvilHammersUsed: number;
+  anvilMaxHammers: number;
+  anvilOverdue: AnvilOverdueSlot[];
+  worshipCurrent: number;
+  worshipMax: number;
+  unendingEnergy: boolean;
+  trapCount: number;
+  trapMax: number;
+  trapsOverdue: boolean;
+  closestTrapLeftMs: number | null;
+  equippedBubbles: number;
+  maxBubbles: number;
+  sheepie: boolean;
+  alchemyActivity: number;
+  emptyObols: number;
+  postOfficeUnspent: number;
+  postOfficeUnmaxed: boolean;
+  starSignsEquipped: number;
+  starSignsMax: number;
+  allStarSignsInfinite: boolean;
+  cardSetRaw: string;
+  passiveCards: number;
+  crystalCountdown: CrystalCountdownSkill[];
+  betterTools: ToolUpgrade[];
+  divinityStyleName: string;
+  divinityStyleIndex: number;
+  isMeditating: boolean;
+  divinityLevel: number;
+  readyTalents: ReadyTalent[];
+  superTalentLeft: number;
+  upgradeSlots: UpgradeSlotItem[];
+  arcanistForm: boolean;
+  tempestForm: boolean;
+  wraithForm: boolean;
+  weaponRaw: string;
+  ringARaw: string;
+  ringBRaw: string;
+  inventory: ItemStat[];
+};
+
 export type StampCategory = 'combat' | 'skills' | 'misc';
 
 export type StampSummary = {
@@ -188,6 +250,7 @@ export type ParsedAccount = {
   armorSmithyDays: number;
   guildName?: string;
   ops: DashboardOps;
+  characterOps: CharacterOps[];
   source: 'cloud' | 'json';
   raw: Record<string, unknown>;
 };
@@ -337,6 +400,31 @@ export type DashboardOps = {
   shimmerTrial: string;
   tomeNametagsAvailable: number;
   tomeUnlocked: boolean;
+  shopRestockSec: number;
+  printerTimeSec: number;
+  companionLastClaimMs: number;
+  happyHours: number[];
+  randEventHr: number;
+};
+
+export type CharacterAlert = {
+  characterIndex: number;
+  characterName: string;
+  classId: number;
+  id: string;
+  title: string;
+  detail?: string;
+  icon: string;
+};
+
+export type DashboardTimer = {
+  group: string;
+  id: string;
+  title: string;
+  detail?: string;
+  icon: string;
+  readyAtMs: number | null;
+  ready: boolean;
 };
 
 export type DashboardAlert = {

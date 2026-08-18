@@ -5,6 +5,8 @@ import { SKILL_NAMES } from '../../core/parse/parseSave';
 import { GameIcon } from '../../ui/icons/GameIcon';
 import { skillIconPath, WORLD_ICONS } from '../../ui/icons/gameIcons';
 import { collectAccountAlerts, groupAlertsByWorld } from './accountAlerts';
+import { collectCharacterAlerts, groupCharacterAlerts } from './characterAlerts';
+import { collectDashboardTimers, formatTimerRemaining, groupDashboardTimers } from './dashboardTimers';
 
 function formatAgo(ms: number | null): string {
   if (!ms) return 'Unknown';
@@ -57,6 +59,10 @@ export function DashboardPage() {
   }));
   const accountAlerts = collectAccountAlerts(account);
   const alertGroups = groupAlertsByWorld(accountAlerts);
+  const characterAlerts = collectCharacterAlerts(account);
+  const charAlertGroups = groupCharacterAlerts(characterAlerts);
+  const dashboardTimers = collectDashboardTimers(account);
+  const timerGroups = groupDashboardTimers(dashboardTimers);
 
   return (
     <div className="page-stack">
@@ -123,6 +129,79 @@ export function DashboardPage() {
           <p className="muted">There are no account alerts to display.</p>
         </section>
       )}
+
+      {charAlertGroups.length > 0 ? (
+        <section className="panel">
+          <h2 className="panel-title-with-icon">
+            <GameIcon path="etc/Character" alt="" size={24} />
+            Character alerts
+            <span className="muted"> · {characterAlerts.length}</span>
+          </h2>
+          <div className="alert-worlds">
+            {charAlertGroups.map((group) => (
+              <div key={group.characterIndex} className="alert-world">
+                <h3 className="alert-world-label">
+                  <GameIcon path={`data/ClassIcons${group.classId}`} alt="" size={20} />
+                  {group.characterName}
+                </h3>
+                <ul className="alert-chip-list">
+                  {group.items.map((item) => (
+                    <li key={item.id} className="alert-chip">
+                      <GameIcon path={item.icon} alt="" size={28} />
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.detail ? <p>{item.detail}</p> : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="panel">
+          <h2 className="panel-title-with-icon">
+            <GameIcon path="etc/Character" alt="" size={24} />
+            Character alerts
+          </h2>
+          <p className="muted">There are no character alerts to display.</p>
+        </section>
+      )}
+
+      {timerGroups.length > 0 ? (
+        <section className="panel">
+          <h2 className="panel-title-with-icon">
+            <GameIcon path="data/StatusExp" alt="" size={24} />
+            Timers
+            <span className="muted"> · {dashboardTimers.length}</span>
+          </h2>
+          <div className="alert-worlds">
+            {timerGroups.map((group) => (
+              <div key={group.group} className="alert-world">
+                <h3 className="alert-world-label">
+                  {WORLD_ICONS[group.group] ? <GameIcon path={WORLD_ICONS[group.group]} alt="" size={20} /> : null}
+                  {group.group}
+                </h3>
+                <ul className="alert-chip-list">
+                  {group.items.map((item) => (
+                    <li key={item.id} className={`alert-chip${item.ready ? ' alert-chip-ready' : ''}`}>
+                      <GameIcon path={item.icon} alt="" size={28} />
+                      <div>
+                        <strong>{item.title}</strong>
+                        <p>
+                          {formatTimerRemaining(item.readyAtMs)}
+                          {item.detail ? ` · ${item.detail}` : ''}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="stat-grid">
         <StatCard icon="etc/Character" label="Characters" value={account.characters.length} />
