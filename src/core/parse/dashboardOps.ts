@@ -1,3 +1,4 @@
+import { parseDashboardExtras } from './dashboardExtras';
 import { asArray, asIndexedNumbers, asNumber, asRecord, forIndexed, toList } from './helpers';
 import type { Character, DashboardOps } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
@@ -41,10 +42,6 @@ function miniBossKills(id: 'mini3b' | 'mini4b' | 'mini5a' | 'mini6a', daysSince:
   return Math.min(id === 'mini4b' ? 8 : 6, Math.floor(Math.pow(wait - 3, 0.5)));
 }
 
-function garbageUpgradeCost(level: number): number {
-  return 7 * Math.pow(1.4, level);
-}
-
 export function parseDashboardOps(
   data: Record<string, unknown>,
   bundle: RawSaveBundle,
@@ -77,7 +74,6 @@ export function parseDashboardOps(
     if (current > 0) equinoxChallengesReady += 1;
   }
 
-  const keys = asIndexedNumbers(data.CYKeysAll ?? asRecord(data.CurrenciesOwned).KeysAll);
   const keyDays = KEY_NPCS.map((npc) => {
     const days = option(npc.daysIndex);
     const ready = Math.min(Math.max(0, days), 3);
@@ -250,6 +246,7 @@ export function parseDashboardOps(
   const owlFeathers = option(254);
   const owlNext = option(255);
   const owlRestartCostReady = option(253) > 0 && owlFeathers > 0 && (owlNext === 0 || option(259) > 0);
+  const extras = parseDashboardExtras(data, characters, option, liquids);
 
   return {
     option,
@@ -316,7 +313,8 @@ export function parseDashboardOps(
     guildWeeklyLeft,
     owlFeathers,
     owlRestartCostReady,
-    owlMegaRestartCostReady: option(253) > 0 && owlNext === 0 && owlFeathers > 0
+    owlMegaRestartCostReady: option(253) > 0 && owlNext === 0 && owlFeathers > 0,
+    ...extras
   };
 }
 

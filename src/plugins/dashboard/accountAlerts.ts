@@ -7,6 +7,15 @@ const ISLAND_AFK_THRESHOLD = 1;
 const SPICE_CLICK_CAP = 100;
 const CRYSTAL_FLOOR = 4;
 const BOSS_GEM_CAP = 600;
+const EMPEROR_ATTEMPT_THRESHOLD = 20;
+const SNEAKING_LOOT_MINUTES = 120;
+const KANGAROO_SHINY_THRESHOLD = 100;
+const HOLE_JAR_THRESHOLD = 120;
+const STAMP_REDUCER_THRESHOLD = 90;
+
+function cleanLabel(value: string): string {
+  return value.replace(/_/g, ' ');
+}
 
 function alert(
   world: string,
@@ -184,6 +193,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
       )
     );
   }
+  if (world >= 1 && ops.affordableStampCount > 0) {
+    alerts.push(
+      alert(
+        'World 1',
+        'affordable-stamps',
+        `You can afford to max ${ops.affordableStampCount} stamp${ops.affordableStampCount === 1 ? '' : 's'} (${ops.affordableStampPercent}% of coins)`,
+        'data/StampA34'
+      )
+    );
+  }
   if (ops.owlRestartCostReady) {
     alerts.push(alert('World 1', 'owl-restart', 'Feather restart can be upgraded', 'etc/Owl_4'));
   }
@@ -289,6 +308,42 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.vialAttempts > 0) {
       alerts.push(alert('World 2', 'vial-attempts', 'You have available vial attempts', 'data/aVials1'));
     }
+    for (const vial of ops.vialsReady) {
+      alerts.push(
+        alert(
+          'World 2',
+          `vial-${vial.rawName}`,
+          `You have enough materials to upgrade ${cleanLabel(vial.name)} vial`,
+          `data/${vial.rawName}`
+        )
+      );
+    }
+    for (const sigil of ops.sigilsReady) {
+      alerts.push(
+        alert(
+          'World 2',
+          `sigil-${sigil.index}`,
+          `${cleanLabel(sigil.name)} is already unlocked`,
+          `data/aSiga${sigil.index}`
+        )
+      );
+    }
+    if (ops.option(267) > 0 && ops.kangarooShinyPct > KANGAROO_SHINY_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 2',
+          'kangaroo-shiny',
+          `You have reached your shiny % threshold of ${KANGAROO_SHINY_THRESHOLD}% (${Math.round(ops.kangarooShinyPct)}%)`,
+          'etc/KShiny'
+        )
+      );
+    }
+    if (ops.kangarooFisherooReady) {
+      alerts.push(alert('World 2', 'fisheroo-reset', 'Fisheroo Reset can be upgraded', 'etc/KUpga_6'));
+    }
+    if (ops.kangarooGreatestCatchReady) {
+      alerts.push(alert('World 2', 'greatest-catch', 'Greatest Catch can be upgraded', 'etc/KUpga_11'));
+    }
   }
 
   if (world >= 3) {
@@ -325,6 +380,59 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         alert('World 3', 'traps', `${ops.trapsOverdue} traps are overdue`, 'data/TrapBoxSet1')
       );
     }
+    if (ops.foodLustMaxed) {
+      alerts.push(alert('World 3', 'food-lust', 'Food Lust is maxed', 'etc/Dream_Upgrade_10'));
+    }
+    if (ops.stampReducerPct >= STAMP_REDUCER_THRESHOLD) {
+      alerts.push(
+        alert(
+          'World 3',
+          'stamp-reducer',
+          `Stamp reducer has reached your threshold (${STAMP_REDUCER_THRESHOLD}%)`,
+          'data/Atom0'
+        )
+      );
+    }
+    for (const salt of ops.refineryMissing) {
+      alerts.push(
+        alert(
+          'World 3',
+          `refinery-mats-${salt.rawName}`,
+          `${cleanLabel(salt.saltName)} is missing refinery materials`,
+          `data/${salt.rawName}`
+        )
+      );
+    }
+    for (const salt of ops.refineryRankUp) {
+      alerts.push(
+        alert(
+          'World 3',
+          `refinery-rank-${salt.rawName}`,
+          `${cleanLabel(salt.saltName)} is ready to rank up`,
+          `data/${salt.rawName}`
+        )
+      );
+    }
+    for (const building of ops.buildingsReady) {
+      alerts.push(
+        alert(
+          'World 3',
+          `building-${building.index}`,
+          `${building.name} is ready to be built`,
+          `data/ConTower${building.index}`
+        )
+      );
+    }
+    for (const hat of ops.missingHats) {
+      alerts.push(
+        alert(
+          'World 3',
+          `hat-${hat.rawName}`,
+          `${cleanLabel(hat.name)} is missing from hat rack`,
+          `data/${hat.rawName}`
+        )
+      );
+    }
   }
 
   if (world >= 4) {
@@ -338,16 +446,125 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.breedingEggs.length >= 15 && eggsFilled === 15) {
       alerts.push(alert('World 4', 'eggs', 'Eggs are at full capacity', 'data/PetEgg1'));
     }
+    for (const meal of ops.mealsReady) {
+      alerts.push(
+        alert(
+          'World 4',
+          `meal-${meal.rawName}`,
+          `${cleanLabel(meal.name)} is ready to be leveled up`,
+          `data/${meal.rawName}`
+        )
+      );
+    }
   }
 
-  if (world >= 5 && account.sailingBoats > 0 && ops.option(124) >= 259200) {
-    alerts.push(
-      alert('World 5', 'sailing-chests', "You've reached the maximum capacity of chests", 'npcs/Chesty')
-    );
+  if (world >= 5) {
+    if (account.sailingBoats > 0 && ops.option(124) >= 259200) {
+      alerts.push(
+        alert('World 5', 'sailing-chests', "You've reached the maximum capacity of chests", 'npcs/Chesty')
+      );
+    }
+    if (ops.betterShopCaptains > 0) {
+      alerts.push(
+        alert(
+          'World 5',
+          'sailing-captains',
+          `${ops.betterShopCaptains} shop captain${ops.betterShopCaptains === 1 ? ' is' : 's are'} better than your current crew`,
+          'etc/Captain_0'
+        )
+      );
+    }
+    if (ops.holeSedimentReady) {
+      alerts.push(
+        alert('World 5', 'hole-buckets', 'One of your sediments has reached the threshold', 'data/HoleWellBucket0')
+      );
+    }
+    if (ops.holeMotherlodeMaxed) {
+      alerts.push(
+        alert('World 5', 'hole-motherlode', 'You can break a layer in the motherlode cavern', 'data/Motherlode_x1')
+      );
+    }
+    if (ops.holeHiveMaxed) {
+      alerts.push(alert('World 5', 'hole-hive', 'You can break a layer in the hive cavern', 'etc/TheHive'));
+    }
+    if (ops.holeEvertreeMaxed) {
+      alerts.push(
+        alert('World 5', 'hole-evertree', 'You can break a layer in the evertree cavern', 'data/MotherlodeTREE_x1')
+      );
+    }
+    if (ops.holeTrenchMaxed) {
+      alerts.push(
+        alert(
+          'World 5',
+          'hole-trench',
+          'You can break a layer in the bottomless trench cavern',
+          'data/MotherlodeFISH_x1'
+        )
+      );
+    }
+    if (ops.holeBraveryReady) {
+      alerts.push(
+        alert('World 5', 'hole-bravery', 'You can hear a story in the bravery cavern', 'etc/Bravery_Statue')
+      );
+    }
+    if (ops.holeJusticeReady) {
+      alerts.push(
+        alert('World 5', 'hole-justice', 'You can hear a story in the justice cavern', 'data/Justice_Monument_x1')
+      );
+    }
+    if (ops.holeWisdomReady) {
+      alerts.push(
+        alert('World 5', 'hole-wisdom', 'You can play a memory game in the wisdom cavern', 'data/Wisdom_Monument_x1')
+      );
+    }
+    if (ops.holeBellReady) {
+      alerts.push(alert('World 5', 'hole-bell', 'One of your cavern bells is ready', 'etc/TheBell'));
+    }
+    if (ops.holeHarpReady) {
+      alerts.push(alert('World 5', 'hole-harp', 'Harp power has reached the threshold', 'etc/TheHarp'));
+    }
+    if (ops.holeGrottoReady) {
+      alerts.push(alert('World 5', 'hole-grotto', 'You can kill the monarch', 'etc/Grotto'));
+    }
+    if (ops.holeJars >= HOLE_JAR_THRESHOLD) {
+      alerts.push(
+        alert('World 5', 'hole-jars', `You can break ${ops.holeJars} jars in the jars cavern`, 'etc/Jar_0')
+      );
+    }
+    if (ops.holeJarsFull > 0) {
+      alerts.push(
+        alert(
+          'World 5',
+          'hole-jars-full',
+          `${ops.holeJarsFull} jar slot${ops.holeJarsFull === 1 ? ' is' : 's are'} full and ready to open`,
+          'etc/Jar_4'
+        )
+      );
+    }
+    for (const villager of ops.holeVillagersReady) {
+      alerts.push(
+        alert(
+          'World 5',
+          `villager-${villager.index}`,
+          `${villager.name} is ready to level up`,
+          `etc/Villager_${villager.index}`
+        )
+      );
+    }
+    for (const study of ops.holeStudiesReady) {
+      alerts.push(
+        alert(
+          'World 5',
+          `study-${study.index}`,
+          `${study.name} study is ready to level up`,
+          'etc/Study_Rate'
+        )
+      );
+    }
   }
 
   if (world >= 6) {
-    if (ops.sneakingLastLootedSec / 60 >= 60 && account.sneakingJadeUpgrades > 0) {
+    if (ops.sneakingLastLootedSec / 60 >= SNEAKING_LOOT_MINUTES && account.sneakingJadeUpgrades > 0) {
       alerts.push(
         alert(
           'World 6',
@@ -429,7 +646,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
-    if (ops.emperorAttempts >= 8) {
+    if (ops.emperorAttempts >= EMPEROR_ATTEMPT_THRESHOLD) {
       alerts.push(
         alert(
           'World 6',
@@ -502,6 +719,26 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
           'button-skips',
           `${ops.buttonSkips} insta-skip${ops.buttonSkips === 1 ? '' : 's'} available`,
           'etc/ButtonG'
+        )
+      );
+    }
+    for (const trophy of ops.missingTrophies) {
+      alerts.push(
+        alert(
+          'World 7',
+          `trophy-${trophy.rawName}`,
+          `${cleanLabel(trophy.name)} is missing from gallery`,
+          `data/${trophy.rawName}`
+        )
+      );
+    }
+    for (const nametag of ops.missingNametags) {
+      alerts.push(
+        alert(
+          'World 7',
+          `nametag-${nametag.rawName}`,
+          `${cleanLabel(nametag.name)} is missing from gallery`,
+          `data/${nametag.rawName}`
         )
       );
     }
