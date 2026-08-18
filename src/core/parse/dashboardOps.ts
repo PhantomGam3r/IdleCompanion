@@ -1,5 +1,5 @@
 import { parseDashboardExtras } from './dashboardExtras';
-import { asArray, asIndexedNumbers, asNumber, asRecord, forIndexed, toList } from './helpers';
+import { asArray, asIndexedNumbers, asNumber, asRecord, forIndexed, numberToLetter, toList } from './helpers';
 import type { Character, DashboardOps } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
 
@@ -20,6 +20,22 @@ const KEY_NPCS = [
   { name: 'Djonnut', rawName: 'Key2', daysIndex: 31, keyIndex: 1 },
   { name: 'Bellows', rawName: 'Key3', daysIndex: 80, keyIndex: 2 }
 ];
+
+const FAMILIAR_MAX_LEVEL = 25;
+const MINEHEAD_EXOTIC_BONUS = 2;
+const SUSHI_EXOTIC_BONUS = 3;
+
+function sushiUniqueCount(data: Record<string, unknown>): number {
+  const track = toList(toList(data.Sushi)[5]);
+  let unique = 0;
+  for (let index = 0; index <= 58; index += 1) {
+    const value = track[index];
+    const tracked = value === undefined || value === null ? -1 : asNumber(value, -1);
+    if (tracked < 0) break;
+    unique = index + 1;
+  }
+  return unique;
+}
 
 const COLO_NPCS = [
   { name: 'Typhoon', rawName: 'TixEZ0', daysIndex: 15 },
@@ -213,7 +229,7 @@ export function parseDashboardOps(
 
   const farmPlots = toList(data.FarmPlot);
   let farmEmptyPlots = 0;
-  let farmHighOgPlots = 0;
+  let farmOgPlots = 0;
   let farmCropsOnPlots = 0;
   for (const plot of farmPlots) {
     const row = asIndexedNumbers(plot);
@@ -223,7 +239,7 @@ export function parseDashboardOps(
       continue;
     }
     farmCropsOnPlots += row[4] ?? 0;
-    if ((row[5] ?? 0) >= 4) farmHighOgPlots += 1;
+    if ((row[5] ?? 0) > 0) farmOgPlots += 1;
   }
 
   const ninja = toList(data.Ninja);
@@ -233,6 +249,7 @@ export function parseDashboardOps(
 
   const summon = toList(data.Summon);
   const summonAttempts = asIndexedNumbers(summon[3])[0] ?? 0;
+  const summonFamiliarLevel = asIndexedNumbers(summon[0])[2] ?? 0;
 
   const sushi = toList(data.Sushi);
   const sushiMisc = asIndexedNumbers(sushi[4]);
@@ -242,6 +259,18 @@ export function parseDashboardOps(
   const research = toList(data.Research);
   const researchRollsLeft = asIndexedNumbers(research[7])[2] ?? 0;
   const mineheadTriesLeft = asIndexedNumbers(research[7])[8] ?? asNumber(toList(data.MineHead)[8]);
+
+  const eventShop = String(optionRaw(311) ?? '');
+  const mineheadOpponentsBeat = asIndexedNumbers(research[7])[4] ?? 0;
+  const exoticPurchased = option(416);
+  const exoticMaxPurchases = Math.round(
+    4 +
+      (mineheadOpponentsBeat > 8 ? MINEHEAD_EXOTIC_BONUS : 0) +
+      8 * (eventShop.includes(numberToLetter(43)) ? 1 : 0) +
+      (sushiUniqueCount(data) > 33 ? SUSHI_EXOTIC_BONUS : 0) +
+      3 * (asNumber(weekly['d_66']) === -1 ? 1 : 0)
+  );
+  const exoticUnlocked = (asIndexedNumbers(toList(data.Spelunk)[0])[3] ?? 0) > 0;
 
   const owlFeathers = option(254);
   const owlNext = option(255);
@@ -283,11 +312,16 @@ export function parseDashboardOps(
     spiceClaims: option(100),
     breedingEggs,
     summonAttempts,
+    summonFamiliarLevel,
+    summonFamiliarMax: FAMILIAR_MAX_LEVEL,
     sneakingLastLootedSec,
     sneakingCharmRolls,
     farmEmptyPlots,
-    farmHighOgPlots,
+    farmOgPlots,
     farmCropsOnPlots,
+    exoticPurchased,
+    exoticMaxPurchases,
+    exoticUnlocked,
     emperorAttempts: option(369),
     pageReadsToday: option(410),
     mineheadTriesLeft,

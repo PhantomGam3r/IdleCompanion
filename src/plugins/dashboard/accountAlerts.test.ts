@@ -323,4 +323,47 @@ describe('collectAccountAlerts', () => {
     expect(alert?.title).toMatch(/can be skipped/);
     expect(collectAccountAlerts(account).some((item) => item.id === 'button-task')).toBe(false);
   });
+
+  it('flags summoning familiar, farm OG plots, and exotic market purchases', () => {
+    const skills = Array.from({ length: 17 }, () => 0);
+    skills[0] = 50;
+    skills[16] = 1;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 250,
+      Lv0_0: skills,
+      Summon: [[0, 0, 4]],
+      FarmPlot: [
+        [0, 0, 0, 0, 8, 2],
+        [-1, 0, 0, 0, 0, 0]
+      ],
+      Spelunk: Object.assign([], { 0: [0, 0, 0, 1] }),
+      OptLacc: Object.assign([], { 416: 1 })
+    });
+    const alerts = collectAccountAlerts(account);
+    const ids = alerts.map((item) => item.id);
+    expect(ids).toContain('summon-familiar');
+    expect(ids).toContain('farm-og');
+    expect(ids).toContain('farm-empty');
+    expect(ids).toContain('exotic-purchases');
+    expect(alerts.find((item) => item.id === 'farm-og')?.title).toMatch(/threshold of 0 OGs/);
+    expect(alerts.find((item) => item.id === 'exotic-purchases')?.title).toMatch(/3 exotic purchases available \(1\/4\)/);
+  });
+
+  it('skips maxed familiars and exotic purchases before lore boss 3', () => {
+    const skills = Array.from({ length: 17 }, () => 0);
+    skills[0] = 50;
+    skills[16] = 1;
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 250,
+      Lv0_0: skills,
+      Summon: [[0, 0, 10]],
+      Spelunk: Object.assign([], { 0: [0, 0, 0, 0] }),
+      OptLacc: Object.assign([], { 416: 0 })
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).not.toContain('summon-familiar');
+    expect(ids).not.toContain('exotic-purchases');
+  });
 });
