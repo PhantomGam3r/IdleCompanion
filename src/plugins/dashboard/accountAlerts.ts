@@ -5,7 +5,6 @@ const MINI_BOSS_THRESHOLD = 2;
 const LIBRARY_BOOK_THRESHOLD = 20;
 const ISLAND_AFK_THRESHOLD = 1;
 const SPICE_CLICK_CAP = 100;
-const CRYSTAL_FLOOR = 4;
 const BOSS_GEM_CAP = 600;
 const EMPEROR_ATTEMPT_THRESHOLD = 20;
 const SNEAKING_LOOT_MINUTES = 120;
@@ -116,7 +115,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
       )
     );
   }
-  const crystalsLeft = Math.max(0, CRYSTAL_FLOOR - ops.crystalKillsToday);
+  const crystalsLeft = Math.max(0, ops.crystalGuarantee - ops.crystalKillsToday);
   if (crystalsLeft > 0) {
     alerts.push(
       alert(
@@ -265,11 +264,12 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
       );
     }
     if (!ops.shimmerClaimed && account.islandsUnlocked > 0) {
+      const trial = ops.shimmerTrial ? ` Challenge: ${ops.shimmerTrial}` : '';
       alerts.push(
         alert(
           'World 2',
           'shimmer',
-          "You haven't claimed your shimmer's trial reward this week",
+          `You haven't claimed your shimmer's trial reward this week.${trial}`,
           'etc/Shimmer_Currency'
         )
       );
@@ -335,7 +335,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
-    if (ops.arcadeAfkSec >= 12 * 3600) {
+    if (ops.arcadeBallsAtCap) {
       alerts.push(alert('World 2', 'arcade-balls', 'Max ball capacity has been reached', 'data/PachiBall0'));
     }
     for (const upgrade of ops.arcadeUnmaxed) {
@@ -349,7 +349,8 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
       );
     }
     ops.liquids.forEach((current, index) => {
-      if (current >= 200) {
+      const max = ops.liquidMaxes[index] ?? 0;
+      if (max > 0 && current >= max * 0.9 - 5) {
         alerts.push(
           alert('World 2', `liquid-${index}`, `${ordinal(index + 1)} liquid is full`, `data/Liquid${index + 1}_x1`)
         );
@@ -518,6 +519,16 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
     if (ops.breedingEggs.length >= 15 && eggsFilled === 15) {
       alerts.push(alert('World 4', 'eggs', 'Eggs are at full capacity', 'data/PetEgg1'));
     }
+    if (ops.tomeUnlocked && ops.tomeNametagsAvailable > 0) {
+      alerts.push(
+        alert(
+          'World 4',
+          'tome-nametags',
+          `You have ${ops.tomeNametagsAvailable} Tome ranking nametag${ops.tomeNametagsAvailable === 1 ? '' : 's'} available to claim`,
+          'data/EquipmentNametag22'
+        )
+      );
+    }
     for (const pet of ops.shinyPets) {
       const reached =
         pet.shinyLevel === 20 ? 'level 20 (max)' : `the shiny threshold (${SHINY_LEVEL_THRESHOLD})`;
@@ -643,7 +654,7 @@ export function collectAccountAlerts(account: ParsedAccount): DashboardAlert[] {
         )
       );
     }
-    if (account.sailingBoats > 0 && ops.option(124) >= 259200) {
+    if (ops.sailingChestsFull) {
       alerts.push(
         alert('World 5', 'sailing-chests', "You've reached the maximum capacity of chests", 'npcs/Chesty')
       );

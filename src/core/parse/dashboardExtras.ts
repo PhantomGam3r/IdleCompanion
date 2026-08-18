@@ -1,5 +1,11 @@
 import {
+  ARCADE_BALL_ACHIEVEMENTS,
+  ARCADE_CLAIM_STAMP,
   ARCADE_EFFECTS,
+  ARCADE_LIQUID_CAP_INDEX,
+  ARCADE_PICKLE_VIAL_BONUS,
+  ARCADE_PICKLE_VIAL_INDEX,
+  ARCADE_RECHARGE_STAMP,
   BUTTON_PERM,
   BUTTON_TASKS,
   BUILD_COST_MULTIPLIER,
@@ -11,6 +17,8 @@ import {
   JEWEL_COGS_SUPERBIT_INDEX,
   LAB_CHIPS,
   LAB_JEWELS,
+  LEGEND_CRYSTAL_TALENT_INDEX,
+  LEGEND_CRYSTAL_TALENT_X2,
   LEGEND_COG_TALENT_INDEX,
   LEGEND_COG_TALENT_X2,
   LEGEND_MASTERCLASS_TALENT_INDEX,
@@ -25,6 +33,9 @@ import {
   REFINERY_POWER_CAPS,
   REFINERY_SALT_INFO,
   RESEARCH_OCCURRENCE_NAMES,
+  SHIMMER_TRIALS,
+  SHINY_BEACON_BONUSES,
+  SHINY_BEACON_INDEX,
   SIGIL_INFO,
   STAMP_GOLD,
   STUDY_NAMES,
@@ -41,6 +52,7 @@ import {
 import { CONSTRUCTION_BUILDINGS } from './catalogs';
 import { asIndexedNumbers, asNumber, asRecord, countIndexedKeys, firstNumber, numberToLetter, toList } from './helpers';
 import { labWeekRotation } from './lavaRand';
+import { taskMeritLevel, tomeNametagClaim } from './tomeNametag';
 import type { Character } from './types';
 
 export type NamedIcon = { name: string; rawName: string };
@@ -114,6 +126,13 @@ export type DashboardExtras = {
   vialAttemptItemsReady: boolean;
   buttonTaskReady: boolean;
   buttonTaskDescription: string;
+  crystalGuarantee: number;
+  arcadeBallsAtCap: boolean;
+  liquidMaxes: number[];
+  sailingChestsFull: boolean;
+  shimmerTrial: string;
+  tomeNametagsAvailable: number;
+  tomeUnlocked: boolean;
 };
 
 const STAMP_SPEND_PERCENT = 25;
@@ -125,6 +144,36 @@ const STAMP_REDUCER_THRESHOLD = 90;
 const GREEN_STACK = 1e7;
 const SHINY_LEVEL_THRESHOLD = 5;
 const BREEDABILITY_LEVEL_THRESHOLD = 5;
+const WEIGHTED_MARBLES_BRIBE = 14;
+const WEIGHTED_MARBLES_BONUS = 10;
+const SKILL_MASTERY_RIFT = 15;
+const CRYSTAL_ACHIEVEMENT = 285;
+const SAILING_CHEST_GEM = 129;
+const SAILING_CHEST_TASK_WORLD = 4;
+const SAILING_CHEST_TASK_INDEX = 2;
+const SAILING_CHEST_ACHIEVEMENTS = [287, 290];
+const ARCADE_TASK_WORLD = 1;
+const ARCADE_TASK_INDEX = 7;
+
+function decayBonus(level: number, x1: number, x2: number): number {
+  if (level <= 0 || x2 === 0) return 0;
+  return Math.round(((x1 * level) / (level + x2) + Number.EPSILON) * 100) / 100;
+}
+
+function achievementCompleted(data: Record<string, unknown>, index: number): boolean {
+  return asIndexedNumbers(data.AchieveReg)[index] === -1;
+}
+
+function skillMasteryRank(level: number): number {
+  if (level < 150) return 0;
+  if (level < 200) return 1;
+  if (level < 300) return 2;
+  if (level < 400) return 3;
+  if (level < 500) return 4;
+  if (level < 750) return 5;
+  if (level < 1000) return 6;
+  return 7;
+}
 
 function visitStrings(value: unknown, visit: (item: string) => void): void {
   if (typeof value === 'string') {
@@ -1033,6 +1082,75 @@ export function parseDashboardExtras(
     }
   }
 
+  const claimStampLevel = stampLevels[ARCADE_CLAIM_STAMP.category]?.[ARCADE_CLAIM_STAMP.index] ?? 0;
+  const rechargeStampLevel = stampLevels[ARCADE_RECHARGE_STAMP.category]?.[ARCADE_RECHARGE_STAMP.index] ?? 0;
+  const claimStamp = Math.min(
+    ARCADE_CLAIM_STAMP.cap,
+    decayBonus(claimStampLevel, ARCADE_CLAIM_STAMP.x1, ARCADE_CLAIM_STAMP.x2)
+  );
+  const rechargeStamp = Math.min(
+    ARCADE_RECHARGE_STAMP.cap,
+    decayBonus(rechargeStampLevel, ARCADE_RECHARGE_STAMP.x1, ARCADE_RECHARGE_STAMP.x2)
+  );
+  let ballBonus = 0;
+  for (const [achievementIndex, bonus] of ARCADE_BALL_ACHIEVEMENTS) {
+    if (achievementCompleted(data, achievementIndex)) ballBonus += bonus;
+  }
+  const pickleLevel = asIndexedNumbers(toList(data.CauldronInfo)[4])[ARCADE_PICKLE_VIAL_INDEX] ?? 0;
+  const bribeRaw = asIndexedNumbers(data.BribeStatus);
+  const marbleBonus = (bribeRaw[WEIGHTED_MARBLES_BRIBE] ?? 0) >= 1 ? WEIGHTED_MARBLES_BONUS : 0;
+  const arcadeTaskBonus = 5 * taskMeritLevel(data, ARCADE_TASK_WORLD, ARCADE_TASK_INDEX);
+  const secPerBall = 4000 / (1 + (ballBonus + ARCADE_PICKLE_VIAL_BONUS * pickleLevel + marbleBonus + arcadeTaskBonus + rechargeStamp) / 100);
+  const maxClaimTime = Math.ceil(3600 * (48 + claimStamp));
+  const maxBalls = Math.floor(maxClaimTime / Math.max(1800, secPerBall));
+  const timeAway = asRecord(data.TimeAway);
+  const arcadeAfkSec = Math.max(0, asNumber(timeAway.GlobalTime) - asNumber(timeAway.Arcade));
+  const ballsToClaim = Math.floor(Math.min(arcadeAfkSec, maxClaimTime) / Math.max(secPerBall, 1800));
+  const arcadeBallsAtCap = maxBalls > 0 && ballsToClaim >= maxBalls - (5 * maxBalls) / 100;
+
+  const shinyUnlocked = sigilRow[SHINY_BEACON_INDEX * 2 + 1] ?? -1;
+  const shinyBonus = shinyUnlocked >= 0 && shinyUnlocked < SHINY_BEACON_BONUSES.length ? (SHINY_BEACON_BONUSES[shinyUnlocked] ?? 0) : 0;
+  const crystalLegendLevels = asIndexedNumbers(toList(data.Spelunk)[18]);
+  const legendCrystal = (crystalLegendLevels[LEGEND_CRYSTAL_TALENT_INDEX] ?? 0) * LEGEND_CRYSTAL_TALENT_X2;
+  const crystalTask = taskMeritLevel(data, 3, 0);
+  const crystalAchievement = achievementCompleted(data, CRYSTAL_ACHIEVEMENT) ? 1 : 0;
+  const crystalGuarantee = Math.max(
+    0,
+    Math.ceil((1 + legendCrystal / 100) * (shinyBonus + (crystalTask + 4 * crystalAchievement)))
+  );
+
+  const riftLevel = firstNumber(data.Rift);
+  const alchemyLevel = characters.reduce((max, character) => Math.max(max, character.skills.Alchemy ?? 0), 0);
+  const p2wLiquids = asIndexedNumbers(p2w[1]);
+  const liquidMastery =
+    riftLevel >= SKILL_MASTERY_RIFT && skillMasteryRank(alchemyLevel) > 4 ? 1 : 0;
+  const bleachBought = asIndexedNumbers(data.GemItemsPurchased)[106] ?? 0;
+  const arcadeLiquid = Math.ceil(
+    decayBonus(arcadeLevels[ARCADE_LIQUID_CAP_INDEX] ?? 0, 25, 100)
+  );
+  const liquidMaxes = [0, 1, 2, 3].map((index) => {
+    const capacity = p2wLiquids[index * 2 + 1] ?? 0;
+    let bleach = 0;
+    if (bleachBought > index) bleach = 0.5;
+    if (option(123) > index) bleach = bleach === 0 ? 1 : 2;
+    const secondMath = bleach + (5 * liquidMastery) / 100;
+    const thirdMath = 10 + capacity + arcadeLiquid;
+    return Math.max(1, Math.ceil((1 + secondMath) * thirdMath));
+  });
+
+  const gemChests = asIndexedNumbers(data.GemItemsPurchased)[SAILING_CHEST_GEM] ?? 0;
+  const taskChests = taskMeritLevel(data, SAILING_CHEST_TASK_WORLD, SAILING_CHEST_TASK_INDEX);
+  const achievementChests = SAILING_CHEST_ACHIEVEMENTS.reduce(
+    (sum, index) => sum + (achievementCompleted(data, index) ? 1 : 0),
+    0
+  );
+  const maxChests = Math.min(Math.round(5 + gemChests + taskChests + achievementChests), 34);
+  const currentChests = toList(data.SailChests).length;
+  const sailingChestsFull = maxChests > 0 && currentChests >= maxChests;
+
+  const shimmerTrial = SHIMMER_TRIALS[option(183)] ?? '';
+  const nametagClaim = tomeNametagClaim(data, characters, option, serverVars);
+
   return {
     affordableStampCount,
     affordableStampPercent: rawMoney > 0 ? Math.ceil((stampTotal / rawMoney) * 100) : 0,
@@ -1100,7 +1218,14 @@ export function parseDashboardExtras(
     labJewelsReady,
     vialAttemptItemsReady,
     buttonTaskReady,
-    buttonTaskDescription
+    buttonTaskDescription,
+    crystalGuarantee,
+    arcadeBallsAtCap,
+    liquidMaxes,
+    sailingChestsFull,
+    shimmerTrial,
+    tomeNametagsAvailable: nametagClaim.available,
+    tomeUnlocked: nametagClaim.tomeUnlocked
   };
 }
 

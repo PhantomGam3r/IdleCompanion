@@ -330,6 +330,13 @@ export type DashboardOps = {
   vialAttemptItemsReady: boolean;
   buttonTaskReady: boolean;
   buttonTaskDescription: string;
+  crystalGuarantee: number;
+  arcadeBallsAtCap: boolean;
+  liquidMaxes: number[];
+  sailingChestsFull: boolean;
+  shimmerTrial: string;
+  tomeNametagsAvailable: number;
+  tomeUnlocked: boolean;
 };
 
 export type DashboardAlert = {

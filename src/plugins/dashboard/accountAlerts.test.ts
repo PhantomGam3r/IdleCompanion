@@ -19,6 +19,7 @@ describe('collectAccountAlerts', () => {
       CurrentMap_0: 120,
       Lv0_0: [80, 0, 0, 0, 0, 20, 0, 0, 40],
       Rift: [25],
+      AchieveReg: Object.assign([], { 285: -1 }),
       OptLacc: Object.assign([], {
         55: 22,
         101: 0,
@@ -501,5 +502,100 @@ describe('collectAccountAlerts', () => {
     const ids = collectAccountAlerts(account).map((item) => item.id);
     expect(ids).not.toContain('summon-familiar');
     expect(ids).not.toContain('exotic-purchases');
+  });
+
+  it('flags unclaimed Tome ranking nametags from TomePct', () => {
+    const account = accountFrom(
+      {
+        CharacterClass_0: 1,
+        CurrentMap_0: 150,
+        Lv0_0: [600, 0, 0, 0, 0, 20],
+        StampLv: [[50]],
+        TimeAway: { GlobalTime: 2628e3 * 12 },
+        OptLacc: Object.assign([], { 447: 0, 448: 12 })
+      },
+      ['A'],
+      { TomeOn: 1, TomePct: [0, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12] }
+    );
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'tome-nametags');
+    expect(alert?.title).toBe('You have 1 Tome ranking nametag available to claim');
+  });
+
+  it('skips Tome nametags when the tome is off', () => {
+    const account = accountFrom(
+      {
+        CharacterClass_0: 1,
+        CurrentMap_0: 150,
+        Lv0_0: [600],
+        TimeAway: { GlobalTime: 2628e3 * 12 },
+        OptLacc: Object.assign([], { 447: 0, 448: 12 })
+      },
+      ['A'],
+      { TomeOn: 0, TomePct: [0, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12] }
+    );
+    expect(collectAccountAlerts(account).some((item) => item.id === 'tome-nametags')).toBe(false);
+  });
+
+  it('uses guaranteed crystal kills from achievement 285', () => {
+    const ready = accountFrom({
+      CharacterClass_0: 1,
+      Lv0_0: [20],
+      AchieveReg: Object.assign([], { 285: -1 }),
+      OptLacc: Object.assign([], { 101: 0 })
+    });
+    expect(collectAccountAlerts(ready).find((item) => item.id === 'daily-crystals')?.title).toBe(
+      'You have 4 daily guaranteed crystal kills remaining'
+    );
+
+    const skipped = accountFrom({
+      CharacterClass_0: 1,
+      Lv0_0: [20],
+      OptLacc: Object.assign([], { 101: 0 })
+    });
+    expect(collectAccountAlerts(skipped).some((item) => item.id === 'daily-crystals')).toBe(false);
+  });
+
+  it('flags arcade balls from max claim time instead of a flat 12h AFK timer', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      TimeAway: { GlobalTime: 200000, Arcade: 200000 - 48 * 3600 }
+    });
+    expect(collectAccountAlerts(account).some((item) => item.id === 'arcade-balls')).toBe(true);
+
+    const shortAfk = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      TimeAway: { GlobalTime: 200000, Arcade: 200000 - 12 * 3600 }
+    });
+    expect(collectAccountAlerts(shortAfk).some((item) => item.id === 'arcade-balls')).toBe(false);
+  });
+
+  it('includes the current shimmer trial name', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 50,
+      Lv0_0: [20, 0, 0, 0, 0, 5],
+      OptLacc: Object.assign([], { 169: 'd', 182: 0, 183: 1 })
+    });
+    const alert = collectAccountAlerts(account).find((item) => item.id === 'shimmer');
+    expect(alert?.title).toMatch(/Challenge: Get as much STR stat as you can/);
+  });
+
+  it('flags liquids at 90% of cauldron cap and sailing chests at max capacity', () => {
+    const account = accountFrom({
+      CharacterClass_0: 1,
+      CurrentMap_0: 200,
+      Lv0_0: [50, 0, 0, 0, 0, 20],
+      CauldronInfo: Object.assign([], { 6: [20] }),
+      CauldronP2W: Object.assign([], { 1: [0, 5] }),
+      SailChests: [[0], [0], [0], [0], [0]],
+      Sailing: [[], [], [0, 2]]
+    });
+    const ids = collectAccountAlerts(account).map((item) => item.id);
+    expect(ids).toContain('liquid-0');
+    expect(ids).toContain('sailing-chests');
   });
 });
