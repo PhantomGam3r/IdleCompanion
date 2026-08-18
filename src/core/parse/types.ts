@@ -289,6 +289,33 @@ export type DashboardOps = {
   holeVillagersReady: { name: string; index: number }[];
   holeStudiesReady: { name: string; index: number }[];
   holeLayersBrokenToday: number;
+  arcadeUnmaxed: { effect: string; level: number; index: number }[];
+  printerFull: { name: string; rawName: string }[];
+  emptyRibbonSlots: number | null;
+  cookingMasteryYellow: number;
+  cookingMasteryPurple: number;
+  gamingSprouts: number;
+  gamingSproutsCapacity: number;
+  gamingDrops: number;
+  gamingShovelHours: number;
+  gamingSquirrelHours: number;
+  gamingShovelUnlocked: boolean;
+  gamingSquirrelUnlocked: boolean;
+  fullStaminaCharacters: number;
+  overstimLevel: number;
+  legendPointsLeft: number;
+  legendPointsSpent: number;
+  legendMaxSpendable: number;
+  masterclassCheapAvailable: number;
+  masterclassCheapUsed: number;
+  masterclassCheapMax: number;
+  doubleClusterReady: boolean;
+  jeweledCogAvailable: number;
+  jeweledCogCurrent: number;
+  jeweledCogMax: number;
+  jeweledCogsUnlocked: boolean;
+  sushiKnowledgeReady: { name: string; index: number; level: number }[];
+  insightObservations: { name: string; index: number; insightLevel: number }[];
 };
 
 export type DashboardAlert = {
