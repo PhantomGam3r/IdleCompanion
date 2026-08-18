@@ -3,8 +3,8 @@ import { useAccount } from '../../ui/AccountProvider';
 import { formatCount } from '../../core/parse/helpers';
 import { SKILL_NAMES } from '../../core/parse/parseSave';
 import { GameIcon } from '../../ui/icons/GameIcon';
-import { skillIconPath } from '../../ui/icons/gameIcons';
-import { runReview } from '../review/engine';
+import { skillIconPath, WORLD_ICONS } from '../../ui/icons/gameIcons';
+import { collectAccountAlerts, groupAlertsByWorld } from './accountAlerts';
 
 function formatAgo(ms: number | null): string {
   if (!ms) return 'Unknown';
@@ -55,9 +55,8 @@ export function DashboardPage() {
     skill,
     level: Math.max(...account.characters.map((c) => c.skills[skill] ?? 0), 0)
   }));
-  const alerts = runReview(account)
-    .find((group) => group.id === 'pinchy')
-    ?.items.filter((item) => item.severity === 'warning') ?? [];
+  const accountAlerts = collectAccountAlerts(account);
+  const alertGroups = groupAlertsByWorld(accountAlerts);
 
   return (
     <div className="page-stack">
@@ -86,27 +85,44 @@ export function DashboardPage() {
         <p className="banner warning">This save is over a day old. Log into Idleon, then refresh here.</p>
       ) : null}
 
-      {alerts.length > 0 ? (
+      {alertGroups.length > 0 ? (
         <section className="panel">
           <h2 className="panel-title-with-icon">
             <GameIcon path="etc/TasksStar" alt="" size={24} />
-            Alerts
+            Account alerts
+            <span className="muted"> · {accountAlerts.length}</span>
           </h2>
-          <ul className="advice-list">
-            {alerts.slice(0, 5).map((item) => (
-              <li key={item.title} className="advice-item warning">
-                <div className="advice-item-main">
-                  {item.icon ? <GameIcon path={item.icon} alt="" size={28} /> : null}
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>{item.detail}</p>
-                  </div>
-                </div>
-              </li>
+          <div className="alert-worlds">
+            {alertGroups.map((group) => (
+              <div key={group.world} className="alert-world">
+                <h3 className="alert-world-label">
+                  {WORLD_ICONS[group.world] ? <GameIcon path={WORLD_ICONS[group.world]} alt="" size={20} /> : null}
+                  {group.world}
+                </h3>
+                <ul className="alert-chip-list">
+                  {group.items.map((item) => (
+                    <li key={item.id} className="alert-chip">
+                      <GameIcon path={item.icon} alt="" size={28} />
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.detail ? <p>{item.detail}</p> : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="panel">
+          <h2 className="panel-title-with-icon">
+            <GameIcon path="etc/TasksStar" alt="" size={24} />
+            Account alerts
+          </h2>
+          <p className="muted">There are no account alerts to display.</p>
+        </section>
+      )}
 
       <section className="stat-grid">
         <StatCard icon="etc/Character" label="Characters" value={account.characters.length} />

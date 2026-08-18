@@ -35,6 +35,7 @@ import type {
   StatueSummary
 } from './types';
 import type { RawSaveBundle } from '../idleon/loadSave';
+import { parseDashboardOps } from './dashboardOps';
 
 export const CLASS_NAMES = [
   'Unknown',
@@ -779,11 +780,13 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
   const armor = parseArmorSets(data);
   const updated = lastUpdatedMs(data);
   const isStale = updated != null ? Date.now() - updated >= 24 * 60 * 60 * 1000 : false;
+  const world = highestWorld(characters);
+  const ops = parseDashboardOps(data, bundle, characters, world);
 
   return {
     names: characters.map((c) => c.name),
     characters,
-    highestWorld: highestWorld(characters),
+    highestWorld: world,
     lastUpdatedMs: updated,
     isStale,
     stamps,
@@ -910,6 +913,7 @@ export function parseSave(bundle: RawSaveBundle): ParsedAccount {
     armorSmithyUnlocked: armor.unlocked,
     armorSetsUnlocked: armor.sets,
     armorSmithyDays: armor.days,
+    ops,
     source: bundle.source,
     raw: data
   };
