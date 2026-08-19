@@ -1,0 +1,17 @@
+{
+  "name": "IdleCompanion",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Vite dev server for IdleCompanion (serves the app at http://localhost:5173)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "vite",
+      "port": 5173
+    }
+  ]
+}
